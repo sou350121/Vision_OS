@@ -36,17 +36,31 @@ A premium, cyberpunk-inspired hand-tracking dashboard built with MediaPipe and T
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/your-repo/vision-os-dashboard.git
+   git clone https://github.com/sou350121/Vision_OS.git
    ```
 2. Navigate to the project directory:
    ```bash
-   cd vision-os-dashboard
+   cd Vision_OS
    ```
-3. Run with a local server (required for MediaPipe assets):
+3. Install dependencies:
    ```bash
-   npx http-server -p 8080 --cors
+   npm install
    ```
-4. Open your browser to `http://localhost:8080`.
+4. Run development server:
+   ```bash
+   npm run dev
+   ```
+
+### Production Build
+
+To generate an optimized production bundle:
+```bash
+npm run build
+```
+The output will be in the `dist/` folder. To preview the build:
+```bash
+npm run preview
+```
 
 ## 🎮 Usage
 

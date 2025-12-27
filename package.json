@@ -1,0 +1,26 @@
+{
+  "name": "vision-os-dashboard",
+  "version": "1.0.0",
+  "description": "A premium, cyberpunk-inspired hand-tracking dashboard built with MediaPipe and Three.js. This application provide high-precision dual-hand tracking, gesture recognition, and real-time 3D spatial reconstruction.",
+  "main": "app.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sou350121/Vision_OS.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/sou350121/Vision_OS/issues"
+  },
+  "homepage": "https://github.com/sou350121/Vision_OS#readme",
+  "devDependencies": {
+    "vite": "^7.3.0"
+  }
+}
