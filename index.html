@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VISION_OS - Neural Interface Terminal</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <h1 class="logo">VISION_OS <span class="version">v0.9.1</span></h1>
+                <p class="subtitle">NEURAL INTERFACE TERMINAL // MEDIAPIPE</p>
+            </div>
+            <div class="header-right">
+                <span class="live-indicator">
+                    <span class="live-dot"></span>
+                    LIVE
+                </span>
+                <span class="cpu-mem">CPU_MEM: <span id="cpuMem">0</span>%</span>
+                <span class="time" id="currentTime">0:00:00 PM</span>
+                <span class="timezone">UTC+08</span>
+            </div>
+        </header>
+
+        <!-- Main Grid -->
+        <main class="dashboard-grid">
+            <!-- Optical Sensor (Webcam + Hand Tracking) -->
+            <section class="panel optical-sensor">
+                <div class="panel-header">
+                    <span class="panel-title">OPTICAL_SENSOR_01</span>
+                    <div class="view-controls">
+                        <button class="view-btn active" id="btn2D">2D</button>
+                        <button class="view-btn" id="btn3D">3D</button>
+                    </div>
+                    <span class="rec-indicator">
+                        <span class="rec-dot"></span>
+                        REC
+                    </span>
+                </div>
+                <div class="video-container">
+                    <div id="threeContainer">
+                        <div class="three-overlay">
+                            <span class="recon-text">3D_RECONSTRUCTION_ACTIVE</span>
+                            <span class="recon-sub">BINAURAL_SPATIAL_MAPPING</span>
+                        </div>
+                    </div>
+                    <video id="webcam" autoplay playsinline></video>
+                    <canvas id="handCanvas"></canvas>
+                    <div class="video-overlay">
+                        <div class="fps-display">
+                            <span class="label">FPS</span>
+                            <span id="fpsValue">0</span>
+                        </div>
+                        <div class="hands-display">
+                            <span class="label">HANDS</span>
+                            <span id="handsCount">0</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Right Panel Stack -->
+            <div class="right-panels">
+                <!-- Finger Extension -->
+                <section class="panel finger-extension">
+                    <div class="panel-header">
+                        <span class="panel-title">FINGER_EXTENSION</span>
+                    </div>
+                    <div class="dual-hand-container">
+                        <!-- Left Hand Block -->
+                        <div class="hand-block left" id="leftHandBlock">
+                            <div class="hand-info-hud">
+                                <div class="hud-item handedness">
+                                    <span class="hud-label">SIDE</span>
+                                    <span class="hud-value" id="leftHandSide">--</span>
+                                </div>
+                                <div class="hud-item position">
+                                    <span class="hud-label">POS</span>
+                                    <span class="hud-value" id="leftHandPos">X:0.0 Y:0.0</span>
+                                </div>
+                            </div>
+                            <div class="finger-bars">
+                                <div class="finger-bar">
+                                    <div class="bar-container">
+                                        <div class="bar-fill" id="leftThumbBar"></div>
+                                    </div>
+                                    <span class="finger-label">THM</span>
+                                </div>
+                                <div class="finger-bar">
+                                    <div class="bar-container">
+                                        <div class="bar-fill" id="leftIndexBar"></div>
+                                    </div>
+                                    <span class="finger-label">IDX</span>
+                                </div>
+                                <div class="finger-bar">
+                                    <div class="bar-container">
+                                        <div class="bar-fill" id="leftMiddleBar"></div>
+                                    </div>
+                                    <span class="finger-label">MID</span>
+                                </div>
+                                <div class="finger-bar">
+                                    <div class="bar-container">
+                                        <div class="bar-fill" id="leftRingBar"></div>
+                                    </div>
+                                    <span class="finger-label">RNG</span>
+                                </div>
+                                <div class="finger-bar">
+                                    <div class="bar-container">
+                                        <div class="bar-fill" id="leftPinkyBar"></div>
+                                    </div>
+                                    <span class="finger-label">PNK</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Hand Block -->
+                        <div class="hand-block right" id="rightHandBlock">
+                            <div class="hand-info-hud">
+                                <div class="hud-item handedness">
+                                    <span class="hud-label">SIDE</span>
+                                    <span class="hud-value" id="rightHandSide">--</span>
+                                </div>
+                                <div class="hud-item position">
+                                    <span class="hud-label">POS</span>
+                                    <span class="hud-value" id="rightHandPos">X:0.0 Y:0.0</span>
+                                </div>
+                            </div>
+                            <div class="finger-bars">
+                                <div class="finger-bar">
+                                    <div class="bar-container">
+                                        <div class="bar-fill" id="rightThumbBar"></div>
+                                    </div>
+                                    <span class="finger-label">THM</span>
+                                </div>
+                                <div class="finger-bar">
+                                    <div class="bar-container">
+                                        <div class="bar-fill" id="rightIndexBar"></div>
+                                    </div>
+                                    <span class="finger-label">IDX</span>
+                                </div>
+                                <div class="finger-bar">
+                                    <div class="bar-container">
+                                        <div class="bar-fill" id="rightMiddleBar"></div>
+                                    </div>
+                                    <span class="finger-label">MID</span>
+                                </div>
+                                <div class="finger-bar">
+                                    <div class="bar-container">
+                                        <div class="bar-fill" id="rightRingBar"></div>
+                                    </div>
+                                    <span class="finger-label">RNG</span>
+                                </div>
+                                <div class="finger-bar">
+                                    <div class="bar-container">
+                                        <div class="bar-fill" id="rightPinkyBar"></div>
+                                    </div>
+                                    <span class="finger-label">PNK</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <div class="side-stack">
+                    <!-- Orientation Compass -->
+                    <section class="panel orientation-compass">
+                        <div class="panel-header">
+                            <span class="panel-title">ORIENTATION_COMPASS</span>
+                        </div>
+                        <div class="compass-container">
+                            <canvas id="compassCanvas"></canvas>
+                            <div class="heading-display">HDG <span id="headingValue">0</span>°</div>
+                        </div>
+                    </section>
+                    <!-- Detected Gesture -->
+                    <section class="panel detected-gesture">
+                        <div class="panel-header">
+                            <span class="panel-title">DETECTED_GESTURE</span>
+                        </div>
+                        <div class="gesture-content">
+                            <div class="gesture-icon" id="gestureIcon">✋</div>
+                            <div class="gesture-name" id="gestureName">NONE</div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+
+            <!-- Bottom Panels -->
+            <!-- Signal Analysis -->
+            <section class="panel signal-analysis">
+                <div class="panel-header">
+                    <span class="panel-title">ANALYSIS_OPEN</span>
+                </div>
+                <div class="signal-content">
+                    <div class="pinch-header">
+                        <span class="label">OPEN_LEVEL</span>
+                        <span class="value" id="pinchValue">0.000</span>
+                    </div>
+                    <canvas id="signalCanvas"></canvas>
+                    <div class="timer" id="timer">0:00</div>
+                </div>
+            </section>
+
+            <!-- Neural Heatmap -->
+            <section class="panel neural-heatmap">
+                <div class="panel-header">
+                    <span class="panel-title">NEURAL_HEATMAP</span>
+                    <span class="heatmap-icon">▦</span>
+                </div>
+                <div class="heatmap-content">
+                    <div class="heatmap-header">
+                        <span class="label">SPATIAL_MAP</span>
+                        <span class="active-label">ACTIVE: <span id="activeCount">0</span></span>
+                    </div>
+                    <div class="heatmap-grid" id="heatmapGrid"></div>
+                </div>
+            </section>
+
+            </section>
+        </main>
+    </div>
+
+    <!-- MediaPipe Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="app.js"></script>
+</body>
+
+</html>
