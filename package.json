@@ -5,6 +5,9 @@
   "main": "app.js",
   "scripts": {
     "dev": "vite",
+    "dev:8080": "vite --port 8080",
+    "bridge": "python wuji_bridge.py --write-mode unchecked --write-timeout 2.0",
+    "wuji:diag": "python wuji_diag.py",
     "build": "vite build",
     "preview": "vite preview"
   },

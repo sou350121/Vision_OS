@@ -51,6 +51,42 @@ A premium, cyberpunk-inspired hand-tracking dashboard built with MediaPipe and T
    npm run dev
    ```
 
+## 🤖 WujiHand Integration (Optional)
+
+This project can stream tracked finger extension data to a **Wuji dexterous hand** via the `wujihandpy` SDK using a local WebSocket bridge.
+
+- **Guide**: See `WUJI_INTEGRATION.md`
+- **Mapping config**: copy `wuji_mapping.example.json` → `wuji_mapping.json` (optional)
+
+Quick start (two terminals):
+
+1. Install Python deps (Windows):
+
+```bash
+pip install -r requirements.txt
+```
+
+2. Start the bridge:
+
+```bash
+python wuji_bridge.py
+```
+
+Recommended (streaming-safe) mode:
+
+```bash
+python wuji_bridge.py --write-mode unchecked --write-timeout 2.0
+```
+
+3. Start Vision_OS (recommended port):
+
+```bash
+npm run dev:8080
+```
+
+4. Open `http://localhost:8080/`, wait for WUJI to show `CONNECTED`, then press **ARM** to enable motion.
+   (Vision_OS always starts **DISARMED** for safety.)
+
 ### Production Build
 
 To generate an optimized production bundle:

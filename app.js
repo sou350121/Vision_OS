@@ -30,8 +30,25 @@ class VisionOS {
         this.gestureHistory = [];
         this.gestureBufferLength = 7;
 
-        // Heatmap state
+        // Neural Heatmap
         this.heatmapCells = [];
+
+        // Wuji Bridge Connection (Vision_OS <-> wujihandpy)
+        this.wujiSocket = null;
+        this.wujiBridgeUrl = localStorage.getItem('wujiBridgeUrl') || 'ws://localhost:8765';
+        this.wujiConnected = false;
+        this.wujiHasHardware = false;
+        this.wujiLastHwError = null;
+        // Safety: always start DISARMED; user must explicitly click ARM each session.
+        this.wujiArmed = false;
+        this.wujiControlSide = localStorage.getItem('wujiControlSide') || 'right'; // left | right | auto
+        // Default to a lower send rate for safer motion; user can raise it in the UI.
+        this.wujiSendHz = Number(localStorage.getItem('wujiSendHz') || '10') || 10;
+        this.wujiLastSendAt = 0;
+        this.wujiLastTelemetry = null;
+        this.wujiTxCount = 0;
+        this.wujiLastTxAt = 0;
+        this._wujiTestTimer = null;
 
         // 3D Mode State
         this.is3DMode = false;
@@ -58,6 +75,10 @@ class VisionOS {
     async init() {
         // Setup View Toggles FIRST to ensure UI works even if 3D fails
         this.setupViewControls();
+
+        // Setup Wuji bridge controls & connect (non-blocking)
+        this.setupWujiControls();
+        this.initWujiConnection();
 
         // Setup heatmap grid
         this.setupHeatmap();
@@ -90,6 +111,8 @@ class VisionOS {
         const webcam = document.getElementById('webcam');
         const handCanvas = document.getElementById('handCanvas');
 
+        if (!btn2D || !btn3D || !threeContainer || !webcam || !handCanvas) return;
+
         btn2D.addEventListener('click', () => {
             this.is3DMode = false;
             btn2D.classList.add('active');
@@ -110,6 +133,388 @@ class VisionOS {
             // Handle resize on first show
             this.onWindowResize();
         });
+    }
+
+    setupWujiControls() {
+        const urlInput = document.getElementById('wujiUrl');
+        const sideSelect = document.getElementById('wujiSide');
+        const armBtn = document.getElementById('wujiArmBtn');
+        const hzSelect = document.getElementById('wujiHz');
+        const reconnectBtn = document.getElementById('wujiReconnectBtn');
+        const testOpenBtn = document.getElementById('wujiTestOpen');
+        const testFistBtn = document.getElementById('wujiTestFist');
+        const resetBtn = document.getElementById('wujiResetBtn');
+        const hardUnjamBtn = document.getElementById('wujiHardUnjamBtn');
+
+        if (urlInput) {
+            urlInput.value = this.wujiBridgeUrl;
+            urlInput.addEventListener('change', () => {
+                const next = (urlInput.value || '').trim();
+                if (!next) return;
+                this.wujiBridgeUrl = next;
+                localStorage.setItem('wujiBridgeUrl', this.wujiBridgeUrl);
+                this.closeWujiSocket();
+                this.initWujiConnection();
+            });
+        }
+
+        if (sideSelect) {
+            sideSelect.value = this.wujiControlSide;
+            sideSelect.addEventListener('change', () => {
+                this.wujiControlSide = sideSelect.value;
+                localStorage.setItem('wujiControlSide', this.wujiControlSide);
+                this.updateWujiUi();
+            });
+        }
+
+        if (armBtn) {
+            armBtn.addEventListener('click', () => this.setWujiArmed(!this.wujiArmed));
+        }
+
+        if (reconnectBtn) {
+            reconnectBtn.addEventListener('click', () => this.requestWujiReconnect());
+        }
+
+        if (testOpenBtn) {
+            testOpenBtn.addEventListener('click', () => this.sendWujiTestPose('OPEN'));
+        }
+        if (testFistBtn) {
+            testFistBtn.addEventListener('click', () => this.sendWujiTestPose('FIST'));
+        }
+        if (resetBtn) {
+            resetBtn.addEventListener('click', () => this.sendWujiReset());
+        }
+        if (hardUnjamBtn) {
+            hardUnjamBtn.addEventListener('click', () => this.sendWujiHardUnjam());
+        }
+
+        if (hzSelect) {
+            hzSelect.value = String(this.wujiSendHz);
+            hzSelect.addEventListener('change', () => {
+                const v = Number(hzSelect.value);
+                this.wujiSendHz = Number.isFinite(v) ? v : 20;
+                localStorage.setItem('wujiSendHz', String(this.wujiSendHz));
+                this.updateWujiUi();
+            });
+        }
+
+        this.updateWujiUi();
+    }
+
+    updateWujiUi() {
+        const connEl = document.getElementById('wujiConn');
+        const armBtn = document.getElementById('wujiArmBtn');
+        const vinEl = document.getElementById('wujiVin');
+        const hwEl = document.getElementById('wujiHw');
+        const armStateEl = document.getElementById('wujiArmState');
+        const vin2El = document.getElementById('wujiVin2');
+        const jointsEl = document.getElementById('wujiJoints');
+        const errEl = document.getElementById('wujiError');
+        const ctrlSideEl = document.getElementById('wujiCtrlSide');
+        const txEl = document.getElementById('wujiTx');
+        const rxEl = document.getElementById('wujiRxHz');
+        const ageEl = document.getElementById('wujiCmdAge');
+
+        if (connEl) {
+            if (!this.wujiConnected) {
+                connEl.textContent = 'DISCONNECTED';
+                connEl.classList.add('disconnected');
+                connEl.classList.remove('connected');
+            } else {
+                connEl.textContent = this.wujiHasHardware ? 'CONNECTED' : 'CONNECTED (MOCK)';
+                connEl.classList.add('connected');
+                connEl.classList.remove('disconnected');
+            }
+        }
+
+        if (hwEl) {
+            hwEl.textContent = this.wujiHasHardware ? 'HW:ON' : 'HW:OFF';
+            hwEl.title = this.wujiLastHwError ? String(this.wujiLastHwError) : '';
+        }
+
+        if (vinEl) {
+            const v = this.wujiLastTelemetry?.input_voltage;
+            vinEl.textContent = (typeof v === 'number' && Number.isFinite(v)) ? v.toFixed(2) : '--';
+        }
+
+        if (vin2El) {
+            const v = this.wujiLastTelemetry?.input_voltage;
+            vin2El.textContent = (typeof v === 'number' && Number.isFinite(v)) ? v.toFixed(2) : '--';
+        }
+
+        if (armStateEl) {
+            armStateEl.textContent = this.wujiArmed ? 'ON' : 'OFF';
+        }
+
+        if (ctrlSideEl) {
+            ctrlSideEl.textContent = String(this.wujiControlSide || 'right').toUpperCase();
+        }
+
+        if (txEl) txEl.textContent = String(this.wujiTxCount || 0);
+        if (rxEl) {
+            const rx = this.wujiLastTelemetry?.cmd_hz;
+            rxEl.textContent = (typeof rx === 'number' && Number.isFinite(rx)) ? String(Math.round(rx)) : '0';
+        }
+        if (ageEl) {
+            const age = this.wujiLastTelemetry?.cmd_age_ms;
+            ageEl.textContent = (typeof age === 'number' && Number.isFinite(age)) ? String(Math.max(0, Math.round(age))) : '--';
+        }
+
+        if (jointsEl) {
+            const pos = this.wujiLastTelemetry?.joint_actual_position;
+            const err = this.wujiLastTelemetry?.joint_error_code;
+            if (Array.isArray(pos) && pos.length === 5) {
+                const labels = ['THM', 'IDX', 'MID', 'RNG', 'PNK'];
+                const lines = pos.map((row, i) => {
+                    const vals = Array.isArray(row) ? row.map(x => (typeof x === 'number' ? x.toFixed(3) : '--')).join(' ') : '--';
+                    let errPart = '';
+                    if (Array.isArray(err) && Array.isArray(err[i])) {
+                        const errVals = err[i].map(x => (typeof x === 'number' ? String(x) : '--')).join(' ');
+                        errPart = ` | E: ${errVals}`;
+                    }
+                    return `${labels[i]}: ${vals}${errPart}`;
+                });
+                jointsEl.textContent = lines.join('\n');
+            } else {
+                jointsEl.textContent = '--';
+            }
+        }
+
+        if (errEl) {
+            const resetActive = Boolean(this.wujiLastTelemetry?.reset_active);
+            const resetPhase = this.wujiLastTelemetry?.reset_phase;
+            const resetLabel = this.wujiLastTelemetry?.reset_label;
+            const resetReason = this.wujiLastTelemetry?.reset_reason;
+            const phaseStr = (typeof resetPhase === 'number' ? String(resetPhase) : '?');
+            const labelStr = (typeof resetLabel === 'string' && resetLabel) ? ` ${resetLabel}` : '';
+            const resetTxt = resetActive ? `RESET: PHASE ${phaseStr}${labelStr}` : '';
+            const reasonTxt = (resetActive && typeof resetReason === 'string' && resetReason)
+                ? `UNJAM:${String(resetReason).toUpperCase()}`
+                : '';
+            const errTxt = this.wujiLastHwError ? `ERR: ${this.wujiLastHwError}` : '';
+            errEl.textContent = [reasonTxt, resetTxt, errTxt].filter(Boolean).join(' | ');
+        }
+
+        if (armBtn) {
+            armBtn.disabled = !this.wujiConnected;
+            armBtn.textContent = this.wujiArmed ? 'DISARM' : 'ARM';
+            if (this.wujiArmed) armBtn.classList.add('armed');
+            else armBtn.classList.remove('armed');
+        }
+    }
+
+    setWujiArmed(enabled) {
+        this.wujiArmed = Boolean(enabled);
+        localStorage.setItem('wujiArmed', String(this.wujiArmed));
+        this.updateWujiUi();
+
+        if (this.wujiSocket && this.wujiSocket.readyState === WebSocket.OPEN) {
+            this.wujiSocket.send(JSON.stringify({
+                type: 'arm',
+                enabled: this.wujiArmed,
+                ts: Date.now()
+            }));
+        }
+    }
+
+    closeWujiSocket() {
+        try {
+            if (this.wujiSocket) this.wujiSocket.close();
+        } catch (_) {
+            // ignore
+        }
+        this.wujiSocket = null;
+        this.wujiConnected = false;
+        this.wujiHasHardware = false;
+        this.updateWujiUi();
+    }
+
+    requestWujiReconnect() {
+        // Force an immediate hardware connect attempt on the bridge (bypasses backoff)
+        if (this.wujiSocket && this.wujiSocket.readyState === WebSocket.OPEN) {
+            try {
+                this.wujiSocket.send(JSON.stringify({ type: 'connect', ts: Date.now() }));
+            } catch (_) {
+                // ignore
+            }
+        } else {
+            this.closeWujiSocket();
+            this.initWujiConnection();
+        }
+    }
+
+    initWujiConnection() {
+        if (!('WebSocket' in window)) return;
+        if (this.wujiSocket && this.wujiSocket.readyState === WebSocket.OPEN) return;
+
+        console.log("[WUJI] Connecting to bridge at " + this.wujiBridgeUrl);
+        this.wujiSocket = new WebSocket(this.wujiBridgeUrl);
+
+        this.wujiSocket.onopen = () => {
+            console.log("[WUJI] Bridge Connected");
+            this.wujiConnected = true;
+            this.updateWujiUi();
+
+            // Hello + push current ARM state
+            this.wujiSocket.send(JSON.stringify({ type: 'hello', client: 'vision-os', ts: Date.now() }));
+            this.setWujiArmed(this.wujiArmed);
+        };
+
+        this.wujiSocket.onclose = () => {
+            console.log("[WUJI] Bridge Disconnected. Retrying in 5s...");
+            this.wujiConnected = false;
+            this.wujiHasHardware = false;
+            this.updateWujiUi();
+            setTimeout(() => this.initWujiConnection(), 5000);
+        };
+
+        this.wujiSocket.onerror = (error) => {
+            console.error("[WUJI] WebSocket Error:", error);
+        };
+
+        this.wujiSocket.onmessage = (event) => {
+            try {
+                const msg = JSON.parse(event.data);
+                if (msg?.type === 'status') {
+                    this.wujiHasHardware = Boolean(msg.has_hardware);
+                    this.wujiLastHwError = msg.last_hw_error || null;
+                    if (typeof msg.armed === 'boolean') {
+                        this.wujiArmed = msg.armed;
+                        localStorage.setItem('wujiArmed', String(this.wujiArmed));
+                    }
+                    this.updateWujiUi();
+                } else if (msg?.type === 'telemetry') {
+                    this.wujiLastTelemetry = msg;
+                    this.updateWujiUi();
+                }
+            } catch (_) {
+                // ignore malformed message
+            }
+        };
+    }
+
+    sendWujiData(extensions, side) {
+        if (!this.wujiArmed) return;
+        if (!this.wujiSocket || this.wujiSocket.readyState !== WebSocket.OPEN) return;
+
+        const now = performance.now();
+        const minInterval = 1000 / (this.wujiSendHz || 20);
+        if (now - this.wujiLastSendAt < minInterval) return;
+        this.wujiLastSendAt = now;
+
+        this.wujiSocket.send(JSON.stringify({
+            type: 'hand_data',
+            side: side,
+            extensions: extensions,
+            timestamp: Date.now()
+        }));
+
+        this.wujiTxCount += 1;
+        this.wujiLastTxAt = Date.now();
+    }
+
+    sendWujiTestPose(poseName) {
+        // Manual commands to validate hardware movement even if the webcam tracking is flaky.
+        if (!this.wujiArmed) {
+            console.warn('[WUJI] Not armed - test pose ignored');
+            return;
+        }
+        if (!this.wujiSocket || this.wujiSocket.readyState !== WebSocket.OPEN) {
+            console.warn('[WUJI] Socket not connected - test pose ignored');
+            return;
+        }
+
+        const name = String(poseName || '').toUpperCase();
+        let extensions = null;
+        if (name === 'OPEN') {
+            extensions = { thumb: 100, index: 100, middle: 100, ring: 100, pinky: 100 };
+        } else if (name === 'FIST') {
+            // Soft grip only (avoid a "perfect fist" which can jam some hardware batches).
+            extensions = { thumb: 30, index: 30, middle: 30, ring: 30, pinky: 30 };
+        } else {
+            return;
+        }
+
+        // Send a short burst so the bridge can safely ramp targets (even if no hands are currently tracked).
+        const hz = Math.max(1, Number(this.wujiSendHz || 10));
+        const intervalMs = Math.max(20, Math.floor(1000 / hz));
+        const endAt = performance.now() + 4000; // 4s burst (bridge ramps targets for safer/slower motion)
+
+        const sendOnce = () => {
+            if (!this.wujiArmed) return false;
+            if (!this.wujiSocket || this.wujiSocket.readyState !== WebSocket.OPEN) return false;
+            this.wujiSocket.send(JSON.stringify({
+                type: 'hand_data',
+                side: 'manual',
+                extensions,
+                timestamp: Date.now()
+            }));
+            this.wujiTxCount += 1;
+            this.wujiLastTxAt = Date.now();
+            return true;
+        };
+
+        if (this._wujiTestTimer) {
+            clearInterval(this._wujiTestTimer);
+            this._wujiTestTimer = null;
+        }
+
+        // Kick immediately, then keep sending until endAt.
+        sendOnce();
+        this._wujiTestTimer = setInterval(() => {
+            if (performance.now() >= endAt) {
+                clearInterval(this._wujiTestTimer);
+                this._wujiTestTimer = null;
+                return;
+            }
+            sendOnce();
+        }, intervalMs);
+    }
+
+    sendWujiReset() {
+        // Recovery: ask bridge to perform disable->enable->reset OPEN (4 fingers then thumb).
+        if (!this.wujiSocket || this.wujiSocket.readyState !== WebSocket.OPEN) {
+            console.warn('[WUJI] Socket not connected - RESET ignored');
+            return;
+        }
+
+        // Ensure ARMED so the bridge control loop can actually drive the reset motion.
+        if (!this.wujiArmed) {
+            this.setWujiArmed(true);
+            setTimeout(() => this.sendWujiReset(), 150);
+            return;
+        }
+
+        try {
+            this.wujiSocket.send(JSON.stringify({ type: 'reset_open', ts: Date.now(), reason: 'ui_reset' }));
+            this.wujiTxCount += 1;
+            this.wujiLastTxAt = Date.now();
+        } catch (e) {
+            console.warn('[WUJI] RESET send failed', e);
+        }
+    }
+
+    sendWujiHardUnjam() {
+        // Aggressive recovery for a stuck fist: lower current + longer relax + reset OPEN.
+        if (!this.wujiSocket || this.wujiSocket.readyState !== WebSocket.OPEN) {
+            console.warn('[WUJI] Socket not connected - HARD UNJAM ignored');
+            return;
+        }
+
+        // Ensure ARMED so the bridge control loop can actually drive the reset motion.
+        if (!this.wujiArmed) {
+            this.setWujiArmed(true);
+            setTimeout(() => this.sendWujiHardUnjam(), 150);
+            return;
+        }
+
+        try {
+            this.wujiSocket.send(JSON.stringify({ type: 'hard_unjam', ts: Date.now(), reason: 'ui_hard_unjam' }));
+            this.wujiTxCount += 1;
+            this.wujiLastTxAt = Date.now();
+        } catch (e) {
+            console.warn('[WUJI] HARD UNJAM send failed', e);
+        }
     }
 
     init3D() {
@@ -412,7 +817,7 @@ class VisionOS {
                 }
 
                 // Update specific hand blocks
-                this.updateFingerExtension(landmarks, side);
+                this.updateFingerExtension(landmarks, side, i === 0);
                 this.updateHandHUD(landmarks, handedness, side);
 
                 // Update primary visualizations (Global) with first hand
@@ -488,7 +893,7 @@ class VisionOS {
         }
     }
 
-    updateFingerExtension(landmarks, side) {
+    updateFingerExtension(landmarks, side, isPrimaryHand = false) {
         // Calculate extension for each finger
         const extensions = {
             thumb: this.getFingerExtension(landmarks, [1, 2, 3, 4]),
@@ -498,10 +903,8 @@ class VisionOS {
             pinky: this.getFingerExtension(landmarks, [17, 18, 19, 20])
         };
 
-        // If this is the primary hand (first in results), update global fingerStates
-        // Global fingerStates is used by classifyGesture and updateHandOpenness
-        const isPrimary = side === (this.lastResults?.multiHandedness[0]?.label.toLowerCase() || '');
-        // Actually, just let the caller in onHandResults handle what's primary.
+        // We set fingerStates for EVERY hand processed, but since global analyzers are called
+        // right after the first hand's updateFingerExtension, they will use the first hand's data.
         // We set fingerStates for EVERY hand processed, but since global analyzers are called
         // right after the first hand's updateFingerExtension, they will use the first hand's data.
         this.fingerStates = extensions;
@@ -513,6 +916,11 @@ class VisionOS {
         document.getElementById(`${prefix}MiddleBar`).style.height = `${extensions.middle}%`;
         document.getElementById(`${prefix}RingBar`).style.height = `${extensions.ring}%`;
         document.getElementById(`${prefix}PinkyBar`).style.height = `${extensions.pinky}%`;
+
+        // Send data to Wuji Bridge for the selected control side
+        const mode = this.wujiControlSide;
+        const shouldSend = (mode === 'auto') ? isPrimaryHand : (side === mode);
+        if (shouldSend) this.sendWujiData(extensions, side);
     }
 
     updateHandHUD(landmarks, handedness, side) {

@@ -29,6 +29,19 @@ The application is a single-page terminal designed for real-time telemetry from 
 - Local development: `npx http-server -p 8080 --cors`.
 - Verification: Browser subagent tests ensure 3D scene integrity and dual-hand parity.
 
+## 🤖 WujiHand Integration (Vision_OS ↔ wujihandpy)
+
+This repo includes an optional hardware bridge:
+- **Bridge server**: `wuji_bridge.py` (WebSocket, default `ws://localhost:8765`)
+- **Diagnostics**: `wuji_diag.py`
+- **Runbook**: `WUJI_INTEGRATION.md`
+
+High-level flow:
+- Vision_OS (browser) computes finger extension (0–100) per finger.
+- It sends selected-hand extension data over WebSocket.
+- `wuji_bridge.py` maps extension → joint target angles using the device joint limits and writes via `wujihandpy`.
+- The bridge also broadcasts telemetry (VIN + joint actual positions) back to Vision_OS.
+
 ## 🚀 Future Roadmap Suggestions
 - **Gesture Persistence**: Implement a "Hold Task" mechanism where holding a gesture for 2 seconds triggers a specific terminal command.
 - **Bone Smoothing**: Implement a simple EMA (Exponential Moving Average) filter on 3D joint positions to eliminate jitter.

@@ -11,6 +11,8 @@
     --accent-green: #00ff66;
     --accent-green-dim: #00ff6640;
     --accent-green-bright: #33ff88;
+    --accent-cyan: #00ffff;
+    --accent-cyan-dim: #00ffff40;
     --text-primary: #ffffff;
     --text-secondary: #888888;
     --text-dim: #444444;
@@ -128,6 +130,184 @@ body {
 
 .cpu-mem span {
     color: var(--accent-green);
+}
+
+.wuji-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 3px 8px;
+    border: 1px solid var(--border-color);
+    background: rgba(0, 0, 0, 0.35);
+    border-radius: 6px;
+}
+
+.wuji-label {
+    color: var(--text-secondary);
+    font-weight: 600;
+    letter-spacing: 1px;
+}
+
+.wuji-conn {
+    font-weight: 700;
+}
+
+.wuji-conn.connected {
+    color: var(--accent-cyan);
+    text-shadow: 0 0 8px var(--accent-cyan-dim);
+}
+
+.wuji-conn.disconnected {
+    color: var(--danger);
+    text-shadow: 0 0 8px rgba(255, 51, 51, 0.25);
+}
+
+.wuji-hw,
+.wuji-vin {
+    color: var(--text-secondary);
+}
+
+.wuji-vin span {
+    color: var(--accent-green);
+}
+
+.wuji-side {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-family: inherit;
+    font-size: 11px;
+}
+
+.wuji-arm-btn {
+    background: transparent;
+    color: var(--accent-green);
+    border: 1px solid var(--accent-green-dim);
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-family: inherit;
+    font-size: 11px;
+    cursor: pointer;
+}
+
+.wuji-arm-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.wuji-arm-btn.armed {
+    background: var(--accent-green);
+    color: #000;
+    border-color: var(--accent-green);
+    box-shadow: 0 0 12px var(--accent-green-dim);
+}
+
+.wuji-reconnect-btn {
+    background: transparent;
+    color: var(--accent-cyan);
+    border: 1px solid var(--accent-cyan-dim);
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-family: inherit;
+    font-size: 10px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.wuji-reconnect-btn:hover {
+    background: rgba(0, 255, 255, 0.06);
+}
+
+.wuji-test-btn {
+    background: transparent;
+    color: var(--accent-green);
+    border: 1px solid rgba(0, 255, 102, 0.25);
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-family: inherit;
+    font-size: 10px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.wuji-test-btn:hover {
+    background: rgba(0, 255, 102, 0.06);
+}
+
+.wuji-telemetry-content {
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 0;
+    flex: 1;
+    /* Make the whole WUJI_TELEMETRY panel scroll vertically (not only the joints <pre>) */
+    overflow-y: auto;
+}
+
+.wuji-telemetry-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    font-size: 10px;
+    color: var(--text-secondary);
+}
+
+.wuji-k {
+    color: var(--text-dim);
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+.wuji-v {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.wuji-url {
+    flex: 1;
+    min-width: 120px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 4px 6px;
+    font-family: inherit;
+    font-size: 10px;
+}
+
+.wuji-hz {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-family: inherit;
+    font-size: 10px;
+}
+
+.wuji-joints {
+    flex: 0 0 auto;
+    min-height: 0;
+    padding: 8px;
+    margin: 0;
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+    /* Let the outer wuji-telemetry-content handle scrolling so users can wheel-scroll anywhere */
+    overflow: visible;
+    font-size: 10px;
+    color: var(--accent-green);
+    line-height: 1.35;
+}
+
+.wuji-error {
+    font-size: 10px;
+    color: var(--danger);
+    min-height: 14px;
 }
 
 .gesture-name {
@@ -883,10 +1063,12 @@ body {
     flex-direction: column;
     gap: 8px;
     flex-shrink: 0;
+    min-height: 0;
 }
 
 .side-stack .panel {
     flex: 1;
+    min-height: 0;
 }
 
 /* Fix main dashboard grid ratio */

@@ -1,0 +1,15 @@
+{
+    "max_curl": 0.70,
+    "open_pose": "upper",
+    "closed_pose": "lower",
+  "finger_weights": {
+    "thumb": [1.0, 0.9, 0.6, 0.0],
+    "index": [0.7, 1.0, 0.8, 0.0],
+    "middle": [0.7, 1.0, 0.8, 0.0],
+    "ring": [0.7, 1.0, 0.8, 0.0],
+    "pinky": [0.7, 1.0, 0.8, 0.0]
+  }
+}
+
+
+

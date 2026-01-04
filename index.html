@@ -24,6 +24,18 @@
                     LIVE
                 </span>
                 <span class="cpu-mem">CPU_MEM: <span id="cpuMem">0</span>%</span>
+                <span class="wuji-controls">
+                    <span class="wuji-label">WUJI</span>
+                    <span id="wujiConn" class="wuji-conn disconnected">DISCONNECTED</span>
+                    <span id="wujiHw" class="wuji-hw">HW:--</span>
+                    <span class="wuji-vin">VIN <span id="wujiVin">--</span>V</span>
+                    <select id="wujiSide" class="wuji-side" title="Which tracked hand controls the hardware hand">
+                        <option value="auto">AUTO</option>
+                        <option value="right">RIGHT</option>
+                        <option value="left">LEFT</option>
+                    </select>
+                    <button id="wujiArmBtn" class="wuji-arm-btn" disabled>ARM</button>
+                </span>
                 <span class="time" id="currentTime">0:00:00 PM</span>
                 <span class="timezone">UTC+08</span>
             </div>
@@ -189,6 +201,52 @@
                             <div class="gesture-name" id="gestureName">NONE</div>
                         </div>
                     </section>
+
+                    <!-- Wuji Hand Telemetry -->
+                    <section class="panel wuji-telemetry">
+                        <div class="panel-header">
+                            <span class="panel-title">WUJI_TELEMETRY</span>
+                        </div>
+                        <div class="wuji-telemetry-content">
+                            <div class="wuji-telemetry-row">
+                                <span class="wuji-k">ARM</span>
+                                <span class="wuji-v" id="wujiArmState">OFF</span>
+                                <span class="wuji-k">VIN</span>
+                                <span class="wuji-v"><span id="wujiVin2">--</span>V</span>
+                            </div>
+                            <div class="wuji-telemetry-row">
+                                <span class="wuji-k">CMD</span>
+                                <span class="wuji-v">TX <span id="wujiTx">0</span></span>
+                                <span class="wuji-v">RX <span id="wujiRxHz">0</span>/s</span>
+                                <span class="wuji-v">AGE <span id="wujiCmdAge">--</span>ms</span>
+                            </div>
+                            <div class="wuji-telemetry-row">
+                                <span class="wuji-k">WS</span>
+                                <input id="wujiUrl" class="wuji-url" type="text" spellcheck="false" />
+                                <button id="wujiReconnectBtn" class="wuji-reconnect-btn" title="Force bridge reconnect now">RECONNECT</button>
+                            </div>
+                            <div class="wuji-telemetry-row">
+                                <span class="wuji-k">CTRL</span>
+                                <span class="wuji-v" id="wujiCtrlSide">RIGHT</span>
+                                <span class="wuji-k">HZ</span>
+                                <select id="wujiHz" class="wuji-hz" title="Send rate (Hz)">
+                                    <option value="10">10</option>
+                                    <option value="20" selected>20</option>
+                                    <option value="30">30</option>
+                                    <option value="60">60</option>
+                                </select>
+                            </div>
+                            <div class="wuji-telemetry-row">
+                                <span class="wuji-k">TEST</span>
+                                <button id="wujiTestOpen" class="wuji-test-btn" title="Send OPEN pose to hardware">OPEN</button>
+                                <button id="wujiTestFist" class="wuji-test-btn" title="Send FIST pose to hardware">FIST</button>
+                                <button id="wujiResetBtn" class="wuji-test-btn" title="Recover from a jammed/gripped state: disable->enable->reset OPEN (4 fingers then thumb)">RESET</button>
+                                <button id="wujiHardUnjamBtn" class="wuji-test-btn" title="HARD UNJAM: lower current limit + longer relax + reset OPEN (use when RESET can't open a stuck fist)">HARD UNJAM</button>
+                            </div>
+                            <pre id="wujiJoints" class="wuji-joints">--</pre>
+                            <div id="wujiError" class="wuji-error"></div>
+                        </div>
+                    </section>
                 </div>
             </div>
 
@@ -221,8 +279,6 @@
                     </div>
                     <div class="heatmap-grid" id="heatmapGrid"></div>
                 </div>
-            </section>
-
             </section>
         </main>
     </div>
