@@ -239,12 +239,6 @@ class WujiBridge:
         self.open_pose = np.array(open_src, dtype=np.float64)
         self.closed_pose = np.array(closed_src, dtype=np.float64)
 
-        # Force J1 (side-to-side spread) to 0 for four fingers to keep them straight
-        # J1 is index 1 in the joint array
-        for fi in [1, 2, 3, 4]:  # INDEX, MIDDLE, RING, PINKY
-            self.open_pose[fi, 1] = 0.0
-            self.closed_pose[fi, 1] = 0.0
-
         if reset_state:
             self.last_target = np.array(self.open_pose, dtype=np.float64)
             self.mock_position = np.array(self.open_pose, dtype=np.float64)
@@ -422,7 +416,7 @@ class WujiBridge:
             # Never break the bridge due to best-effort diagnostics
             return
 
-    def _compute_target_from_extensions(self, extensions: Dict[str, Any], thumb_spread: float = 50.0) -> np.ndarray:
+    def _compute_target_from_extensions(self, extensions: Dict[str, Any]) -> np.ndarray:
         if self.open_pose is None or self.closed_pose is None:
             raise RuntimeError("Hardware not calibrated (joint limits missing).")
 
@@ -446,17 +440,6 @@ class WujiBridge:
             tgt[finger_idx, :] = self.open_pose[finger_idx, :] + (curl * weights) * (
                 self.closed_pose[finger_idx, :] - self.open_pose[finger_idx, :]
             )
-
-        # Apply thumb spread to thumb J1 (index 1) separately
-        # thumbSpread: 0 = tucked against palm, 100 = fully spread out
-        # J1 controls thumb rotation/opposition
-        thumb_idx = FINGER_INDEX["thumb"]  # 0
-        thumb_j1_weight = self.finger_weights.get("thumb", DEFAULT_THUMB_WEIGHTS)[1]
-        if thumb_j1_weight > 0.0:
-            spread_norm = max(0.0, min(100.0, float(thumb_spread))) / 100.0  # 0-1
-            j1_range = self.closed_pose[thumb_idx, 1] - self.open_pose[thumb_idx, 1]
-            # spread=0 (tucked) -> towards closed, spread=100 (open) -> towards open
-            tgt[thumb_idx, 1] = self.open_pose[thumb_idx, 1] + (1.0 - spread_norm) * thumb_j1_weight * j1_range
 
         return tgt
 
@@ -502,15 +485,14 @@ class WujiBridge:
 
         arr = np.asarray(target, dtype=np.float64)
         
-        # Temporarily disable realtime controller to debug - use direct write
         # Prefer realtime controller for smoother motion (hardware-level filtering)
-        # if self.rt_controller is not None:
-        #     try:
-        #         self.rt_controller.set_joint_target_position(arr)
-        #         return
-        #     except Exception as e:
-        #         # Fall back to direct write if realtime controller fails
-        #         print(f"[BRIDGE] rt_controller failed: {e}, using fallback", flush=True)
+        if self.rt_controller is not None:
+            try:
+                self.rt_controller.set_joint_target_position(arr)
+                return
+            except Exception:
+                # Fall back to direct write if realtime controller fails
+                pass
         
         # Fallback: direct write
         timeout = float(self.cfg.write_timeout_s)
@@ -837,9 +819,7 @@ class WujiBridge:
                     # Lightweight debug: log at most once per second
                     if (now_m - self._last_rx_log_monotonic) > 1.0:
                         self._last_rx_log_monotonic = now_m
-                        ext = data.get("extensions") or {}
-                        ts = data.get("thumbSpread", 50)
-                        print(f"[BRIDGE] RX hand_data ext={ext} thumbSpread={ts:.1f} armed={self.armed} reset={self._reset_active}", flush=True)
+                        print("[BRIDGE] RX hand_data", flush=True)
                     if not self.armed:
                         continue
                     # During reset window, ignore tracking commands; we are forcing OPEN.
@@ -847,9 +827,8 @@ class WujiBridge:
                         continue
 
                     extensions = data.get("extensions") or {}
-                    thumb_spread = float(data.get("thumbSpread", 50.0))
                     try:
-                        target = self._compute_target_from_extensions(extensions, thumb_spread)
+                        target = self._compute_target_from_extensions(extensions)
                         self.desired_target = np.asarray(target, dtype=np.float64)
                     except Exception as e:
                         self.last_hw_error = str(e)

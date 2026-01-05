@@ -239,12 +239,6 @@ class WujiBridge:
         self.open_pose = np.array(open_src, dtype=np.float64)
         self.closed_pose = np.array(closed_src, dtype=np.float64)
 
-        # Force J1 (side-to-side spread) to 0 for four fingers to keep them straight
-        # J1 is index 1 in the joint array
-        for fi in [1, 2, 3, 4]:  # INDEX, MIDDLE, RING, PINKY
-            self.open_pose[fi, 1] = 0.0
-            self.closed_pose[fi, 1] = 0.0
-
         if reset_state:
             self.last_target = np.array(self.open_pose, dtype=np.float64)
             self.mock_position = np.array(self.open_pose, dtype=np.float64)
@@ -341,9 +335,9 @@ class WujiBridge:
             # Initialize realtime controller with LowPass filter for smooth motion
             # Higher cutoff = faster response, lower cutoff = smoother but slower
             try:
-                lowpass = wujihandpy.filter.LowPass(cutoff_freq=8.0)  # 8 Hz for fast response
+                lowpass = wujihandpy.filter.LowPass(cutoff_freq=5.0)  # 5 Hz for faster response
                 self.rt_controller = self.hand.realtime_controller(enable_upstream=True, filter=lowpass)
-                print("[BRIDGE] Realtime controller initialized with LowPass filter (8Hz)", flush=True)
+                print("[BRIDGE] Realtime controller initialized with LowPass filter (5Hz)", flush=True)
             except Exception as e:
                 self.rt_controller = None
                 print(f"[BRIDGE] Realtime controller init failed (using fallback): {e}", flush=True)
@@ -422,7 +416,7 @@ class WujiBridge:
             # Never break the bridge due to best-effort diagnostics
             return
 
-    def _compute_target_from_extensions(self, extensions: Dict[str, Any], thumb_spread: float = 50.0) -> np.ndarray:
+    def _compute_target_from_extensions(self, extensions: Dict[str, Any]) -> np.ndarray:
         if self.open_pose is None or self.closed_pose is None:
             raise RuntimeError("Hardware not calibrated (joint limits missing).")
 
@@ -447,40 +441,28 @@ class WujiBridge:
                 self.closed_pose[finger_idx, :] - self.open_pose[finger_idx, :]
             )
 
-        # Apply thumb spread to thumb J1 (index 1) separately
-        # thumbSpread: 0 = tucked against palm, 100 = fully spread out
-        # J1 controls thumb rotation/opposition
-        thumb_idx = FINGER_INDEX["thumb"]  # 0
-        thumb_j1_weight = self.finger_weights.get("thumb", DEFAULT_THUMB_WEIGHTS)[1]
-        if thumb_j1_weight > 0.0:
-            spread_norm = max(0.0, min(100.0, float(thumb_spread))) / 100.0  # 0-1
-            j1_range = self.closed_pose[thumb_idx, 1] - self.open_pose[thumb_idx, 1]
-            # spread=0 (tucked) -> towards closed, spread=100 (open) -> towards open
-            tgt[thumb_idx, 1] = self.open_pose[thumb_idx, 1] + (1.0 - spread_norm) * thumb_j1_weight * j1_range
-
         return tgt
 
     def _filter_target(self, desired: np.ndarray) -> np.ndarray:
-        """Minimal filtering - hardware LowPass handles smoothing."""
+        """Apply speed limiting only (smoothing handled by hardware LowPass filter)."""
         tgt = np.asarray(desired, dtype=np.float64)
 
         if self.min_lim is not None and self.max_lim is not None:
             tgt = np.clip(tgt, self.min_lim, self.max_lim)
 
+        prev = None if self.last_target is None else np.asarray(self.last_target, dtype=np.float64)
+
         now = time.monotonic()
-        
-        # Only apply speed limiting during reset/unjam for safety
-        # Normal operation: no speed limiting, let hardware LowPass smooth
-        if self._reset_active:
-            prev = None if self.last_target is None else np.asarray(self.last_target, dtype=np.float64)
-            dt = now - float(self._last_target_monotonic)
-            dt = max(0.0, min(dt, 0.2))
-            max_speed = float(self.cfg.unjam_max_speed_rad_s)
-            if prev is not None and max_speed > 0.0 and dt > 0.0:
-                max_step = max_speed * dt
-                if max_step > 0.0:
-                    delta = np.clip(tgt - prev, -max_step, max_step)
-                    tgt = prev + delta
+        dt = now - float(self._last_target_monotonic)
+        dt = max(0.0, min(dt, 0.2))  # Clamp dt to avoid jumps
+
+        # Speed limiting only (smoothing is done by hardware LowPass filter)
+        max_speed = float(self.cfg.unjam_max_speed_rad_s) if self._reset_active else float(self.cfg.max_speed_rad_s)
+        if prev is not None and max_speed > 0.0 and dt > 0.0:
+            max_step = max_speed * dt
+            if max_step > 0.0:
+                delta = np.clip(tgt - prev, -max_step, max_step)
+                tgt = prev + delta
 
         self._last_target_monotonic = now
         self.last_target = np.asarray(tgt, dtype=np.float64)
@@ -502,15 +484,14 @@ class WujiBridge:
 
         arr = np.asarray(target, dtype=np.float64)
         
-        # Temporarily disable realtime controller to debug - use direct write
         # Prefer realtime controller for smoother motion (hardware-level filtering)
-        # if self.rt_controller is not None:
-        #     try:
-        #         self.rt_controller.set_joint_target_position(arr)
-        #         return
-        #     except Exception as e:
-        #         # Fall back to direct write if realtime controller fails
-        #         print(f"[BRIDGE] rt_controller failed: {e}, using fallback", flush=True)
+        if self.rt_controller is not None:
+            try:
+                self.rt_controller.set_joint_target_position(arr)
+                return
+            except Exception:
+                # Fall back to direct write if realtime controller fails
+                pass
         
         # Fallback: direct write
         timeout = float(self.cfg.write_timeout_s)
@@ -837,9 +818,7 @@ class WujiBridge:
                     # Lightweight debug: log at most once per second
                     if (now_m - self._last_rx_log_monotonic) > 1.0:
                         self._last_rx_log_monotonic = now_m
-                        ext = data.get("extensions") or {}
-                        ts = data.get("thumbSpread", 50)
-                        print(f"[BRIDGE] RX hand_data ext={ext} thumbSpread={ts:.1f} armed={self.armed} reset={self._reset_active}", flush=True)
+                        print("[BRIDGE] RX hand_data", flush=True)
                     if not self.armed:
                         continue
                     # During reset window, ignore tracking commands; we are forcing OPEN.
@@ -847,9 +826,8 @@ class WujiBridge:
                         continue
 
                     extensions = data.get("extensions") or {}
-                    thumb_spread = float(data.get("thumbSpread", 50.0))
                     try:
-                        target = self._compute_target_from_extensions(extensions, thumb_spread)
+                        target = self._compute_target_from_extensions(extensions)
                         self.desired_target = np.asarray(target, dtype=np.float64)
                     except Exception as e:
                         self.last_hw_error = str(e)

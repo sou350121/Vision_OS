@@ -51,41 +51,46 @@ A premium, cyberpunk-inspired hand-tracking dashboard built with MediaPipe and T
    npm run dev
    ```
 
-## 🤖 WujiHand Integration (Optional)
+## 🤖 WujiHand Integration
 
 This project can stream tracked finger extension data to a **Wuji dexterous hand** via the `wujihandpy` SDK using a local WebSocket bridge.
 
-- **Guide**: See `WUJI_INTEGRATION.md`
-- **Mapping config**: copy `wuji_mapping.example.json` → `wuji_mapping.json` (optional)
+### Features
+- Real-time finger tracking → robotic hand control (~50ms latency)
+- 5-finger curl tracking + independent thumb spread control
+- Hardware LowPass filtering for smooth motion
+- Safety mechanisms: ARM switch, Reset sequence, max_curl limit
 
-Quick start (two terminals):
+### Quick Start
 
-1. Install Python deps (Windows):
-
-```bash
-pip install -r requirements.txt
-```
+1. Install Python dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
 
 2. Start the bridge:
+   ```bash
+   python wuji_bridge.py --max-speed 2.0
+   ```
 
-```bash
-python wuji_bridge.py
-```
-
-Recommended (streaming-safe) mode:
-
-```bash
-python wuji_bridge.py --write-mode unchecked --write-timeout 2.0
-```
-
-3. Start Vision_OS (recommended port):
-
-```bash
-npm run dev:8080
-```
+3. Start Vision_OS:
+   ```bash
+   npx http-server -p 8080
+   ```
 
 4. Open `http://localhost:8080/`, wait for WUJI to show `CONNECTED`, then press **ARM** to enable motion.
-   (Vision_OS always starts **DISARMED** for safety.)
+
+### Configuration
+
+Copy `wuji_mapping.example.json` → `wuji_mapping.json` to customize:
+- `open_pose` / `closed_pose`: Direction mapping (lower/upper)
+- `max_curl`: Maximum grip strength (0-1, default 0.85)
+- `finger_weights`: Per-joint weight tuning
+
+### Documentation
+- **Integration Guide**: `WUJI_INTEGRATION.md`
+- **Technical Details**: `TECHNICAL_DETAILS.md`
+- **Project Summary**: `PROJECT_SUMMARY.md`
 
 ### Production Build
 

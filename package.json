@@ -9,7 +9,9 @@
     "bridge": "python wuji_bridge.py --write-mode unchecked --write-timeout 2.0",
     "wuji:diag": "python wuji_diag.py",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "repository": {
     "type": "git",
@@ -24,6 +26,8 @@
   },
   "homepage": "https://github.com/sou350121/Vision_OS#readme",
   "devDependencies": {
-    "vite": "^7.3.0"
+    "fast-check": "^4.5.3",
+    "vite": "^7.3.0",
+    "vitest": "^4.0.16"
   }
 }

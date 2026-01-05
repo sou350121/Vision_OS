@@ -497,35 +497,35 @@ class VisionOS {
         return curved * 100;
     }
 
-    sendWujiData(extensions, side, thumbSpread = 50) {
-        if (!this.wujiArmed) {
-            // console.log('[WUJI] Not armed, skipping send');
-            return;
-        }
-        if (!this.wujiSocket || this.wujiSocket.readyState !== WebSocket.OPEN) {
-            console.log('[WUJI] Socket not ready, skipping send');
-            return;
-        }
+    sendWujiData(extensions, side) {
+        if (!this.wujiArmed) return;
+        if (!this.wujiSocket || this.wujiSocket.readyState !== WebSocket.OPEN) return;
 
         const now = performance.now();
-        // Send at 60Hz for smoother data stream to hardware
-        const minInterval = 1000 / 60;
+        const minInterval = 1000 / (this.wujiSendHz || 30);
         if (now - this.wujiLastSendAt < minInterval) return;
         this.wujiLastSendAt = now;
 
         // Clamp extensions: max 75 so "fully open" gesture still shows natural bend
-        // NO software filtering - let hardware LowPass handle all smoothing
         const clampedExtensions = {};
         for (const finger of ['thumb', 'index', 'middle', 'ring', 'pinky']) {
             const val = extensions[finger] || 0;
             clampedExtensions[finger] = Math.min(val, 75);
         }
 
+        // Apply One Euro Filter for adaptive smoothing
+        // - Low speed: more smoothing (reduce jitter)
+        // - High speed: less smoothing (reduce lag)
+        const filteredExtensions = {};
+        for (const finger of ['thumb', 'index', 'middle', 'ring', 'pinky']) {
+            const raw = clampedExtensions[finger] || 0;
+            filteredExtensions[finger] = this.wujiFingerFilters[finger].filter(raw, now);
+        }
+
         this.wujiSocket.send(JSON.stringify({
             type: 'hand_data',
             side: side,
-            extensions: clampedExtensions,
-            thumbSpread: Math.min(thumbSpread, 100),  // Thumb spread for J1 control
+            extensions: filteredExtensions,
             timestamp: Date.now()
         }));
 
@@ -1022,10 +1022,9 @@ class VisionOS {
             ring: this.getFingerExtension(landmarks, [13, 14, 15, 16]),
             pinky: this.getFingerExtension(landmarks, [17, 18, 19, 20])
         };
-        
-        // Calculate thumb spread separately (for J1 control)
-        const thumbSpread = this.getThumbSpread(landmarks);
 
+        // We set fingerStates for EVERY hand processed, but since global analyzers are called
+        // right after the first hand's updateFingerExtension, they will use the first hand's data.
         // We set fingerStates for EVERY hand processed, but since global analyzers are called
         // right after the first hand's updateFingerExtension, they will use the first hand's data.
         this.fingerStates = extensions;
@@ -1041,7 +1040,7 @@ class VisionOS {
         // Send data to Wuji Bridge for the selected control side
         const mode = this.wujiControlSide;
         const shouldSend = (mode === 'auto') ? isPrimaryHand : (side === mode);
-        if (shouldSend) this.sendWujiData(extensions, side, thumbSpread);
+        if (shouldSend) this.sendWujiData(extensions, side);
     }
 
     updateHandHUD(landmarks, handedness, side) {
@@ -1078,8 +1077,7 @@ class VisionOS {
     }
 
     getFingerExtension(landmarks, indices) {
-        // THUMB: Only return curl (bend) score
-        // Spread is handled separately by getThumbSpread()
+        // THUMB: Compound Logic (Structure + Position)
         if (indices[0] === 1) {
             const cmc = landmarks[1];
             const mcpThumb = landmarks[2];
@@ -1089,7 +1087,19 @@ class VisionOS {
             const angleIP = this.getAngle(mcpThumb, ip, tipThumb);
             const avgAngle = (angleMCP + angleIP) / 2;
             // Map Angle: 142 (Bent) -> 0%, 175 (Straight) -> 100%
-            return Math.max(0, Math.min(100, (avgAngle - 142) * 3.0));
+            // Increased baseline from 130 to 142 for much stricter curling detection
+            const angleScore = Math.max(0, Math.min(100, (avgAngle - 142) * 3.0));
+            const wrist = landmarks[0];
+            const indexMCP = landmarks[5];
+            const middleMCP = landmarks[9];
+            const handScale = Math.sqrt(Math.pow(middleMCP.x - wrist.x, 2) + Math.pow(middleMCP.y - wrist.y, 2) + Math.pow(middleMCP.z - wrist.z, 2));
+            const zWeight = 4.0;
+            const spread = Math.sqrt(Math.pow(tipThumb.x - indexMCP.x, 2) + Math.pow(tipThumb.y - indexMCP.y, 2) + Math.pow((tipThumb.z - indexMCP.z) * zWeight, 2));
+            const ratio = spread / (handScale || 1);
+            // Map Spread: 0.30 (Tucked) -> 0%, 0.65 (Open) -> 100%
+            // Increased baseline from 0.22 to 0.30 to ensure tucked thumb registers 0%
+            const spreadScore = Math.max(0, Math.min(100, (ratio - 0.30) * 285));
+            return Math.max(0, Math.min(angleScore, spreadScore));
         }
 
         // FINGERS: Robust Angle-Based Check (Straightness)
@@ -1114,66 +1124,6 @@ class VisionOS {
         // Map Angle: 100 (Bent) -> 0% to 165 (Straight) -> 100%
         // Adjusted range to account for MCP joint
         return Math.max(0, Math.min(100, (avgAngle - 100) * 1.54));
-    }
-
-    /**
-     * Calculate thumb spread/opposition (0-100).
-     * This measures how far the thumb is from the palm/index finger.
-     * 0 = thumb tucked against palm, 100 = thumb fully spread out
-     */
-    getThumbSpread(landmarks) {
-        const tipThumb = landmarks[4];
-        const wrist = landmarks[0];
-        const indexMCP = landmarks[5];
-        const middleMCP = landmarks[9];
-        
-        // Hand scale for normalization
-        const handScale = Math.sqrt(
-            Math.pow(middleMCP.x - wrist.x, 2) + 
-            Math.pow(middleMCP.y - wrist.y, 2) + 
-            Math.pow(middleMCP.z - wrist.z, 2)
-        );
-        
-        // Distance from thumb tip to index MCP (with Z weight for depth)
-        const zWeight = 4.0;
-        const spread = Math.sqrt(
-            Math.pow(tipThumb.x - indexMCP.x, 2) + 
-            Math.pow(tipThumb.y - indexMCP.y, 2) + 
-            Math.pow((tipThumb.z - indexMCP.z) * zWeight, 2)
-        );
-        
-        const ratio = spread / (handScale || 1);
-        // Map Spread: 0.30 (Tucked) -> 0%, 0.65 (Open) -> 100%
-        return Math.max(0, Math.min(100, (ratio - 0.30) * 285));
-    }
-
-    /**
-     * Calculate individual joint extensions for index finger.
-     * Returns separate extension values for MCP, PIP, and DIP joints.
-     */
-    getIndexJoints(landmarks) {
-        const wrist = landmarks[0];
-        const mcp = landmarks[5];  // Index MCP
-        const pip = landmarks[6];  // Index PIP
-        const dip = landmarks[7];  // Index DIP
-        const tip = landmarks[8];  // Index tip
-        
-        // MCP angle: wrist -> mcp -> pip
-        const angleMCP = this.getAngle(wrist, mcp, pip);
-        // PIP angle: mcp -> pip -> dip
-        const anglePIP = this.getAngle(mcp, pip, dip);
-        // DIP angle: pip -> dip -> tip
-        const angleDIP = this.getAngle(pip, dip, tip);
-        
-        // Map each joint angle to 0-100
-        // MCP: 90° (bent) -> 0%, 170° (straight) -> 100%
-        // PIP: 60° (bent) -> 0%, 175° (straight) -> 100%
-        // DIP: 60° (bent) -> 0%, 175° (straight) -> 100%
-        return {
-            mcp: Math.max(0, Math.min(100, (angleMCP - 90) * 1.25)),
-            pip: Math.max(0, Math.min(100, (anglePIP - 60) * 0.87)),
-            dip: Math.max(0, Math.min(100, (angleDIP - 60) * 0.87))
-        };
     }
 
     updateHandOpenness(landmarks) {
