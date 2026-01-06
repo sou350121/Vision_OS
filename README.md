@@ -1,4 +1,4 @@
-# VISION_OS - Control Robotic Hand with Webcam
+# VisionOS - Control Robotic Hand with Webcam
 
 [中文](README_CN.md) | English
 
