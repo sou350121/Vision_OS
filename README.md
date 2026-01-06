@@ -1,6 +1,29 @@
-# VISION_OS - Neural Interface Terminal
+# VISION_OS - Control Robotic Hand with Webcam
 
-A premium, cyberpunk-inspired hand-tracking dashboard built with MediaPipe and Three.js. This application provide high-precision dual-hand tracking, gesture recognition, and real-time 3D spatial reconstruction.
+[中文](README_CN.md) | English
+
+Use a regular webcam to track hand movements and control a WujiHand robotic hand in real-time.
+
+## Why This Project?
+
+Got a WujiHand and wanted to do something fun with it. Good opportunity to learn MediaPipe hand tracking and practice real-time system development.
+
+Along the way, I made some optimizations (hardware filtering, non-blocking USB writes, etc.) and got the latency down to ~50ms.
+
+## 🎯 What You Get
+
+### Hand Tracking Dashboard (No Hardware Needed)
+Even without a WujiHand, you get a fully functional hand tracking visualization:
+- **Dual-hand tracking** with real-time finger extension bars
+- **Gesture recognition**: OPEN, PEACE, THREE, OK, CALL, THUMBS_UP
+- **3D visualization** with cyberpunk-style holographic hand models
+- **Biometric displays**: Neural heatmap, orientation compass, signal graphs
+
+### WujiHand Control (With Hardware)
+- Real-time finger tracking → robotic hand control (~50ms latency)
+- 5-finger curl + independent thumb spread (6 DOF)
+- Auto USB device scanning, plug and play
+- Safety mechanisms: ARM switch, Reset sequence, grip limits
 
 ## 🚀 Key Features
 
@@ -167,4 +190,4 @@ npm run preview
 
 ## 📜 License
 
-Created by **Antigravity**. Designed for experimental neural interface prototyping.
+MIT
