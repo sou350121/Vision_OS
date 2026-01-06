@@ -10,7 +10,11 @@
 
 ## Demo（真实硬件联动）
 
-- `docs/assets/demo1.mp4`：实际联动实况录像（点击打开 `docs/assets/demo1.mp4`）
+- 点击缩略图观看：
+
+[![VISION_OS 硬件联动 Demo](docs/assets/cover.jpeg)](https://youtu.be/onrclXu-o68)
+
+- Repo 内原始文件（下载/打开）：`docs/assets/demo1.mp4`
 
 ## 为什么做这个项目？
 

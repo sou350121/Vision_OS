@@ -10,7 +10,11 @@ Track hand movements with a regular webcam, optionally control a WujiHand roboti
 
 ## Demo (Real Hardware)
 
-- `docs/assets/demo1.mp4` (real-time linkage recording): open `docs/assets/demo1.mp4`
+- Click the thumbnail to watch:
+
+[![VISION_OS hardware demo](docs/assets/cover.jpeg)](https://youtu.be/onrclXu-o68)
+
+- Direct file in repo (download/open): `docs/assets/demo1.mp4`
 
 ## Why This Project?
 
