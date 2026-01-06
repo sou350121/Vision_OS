@@ -6,9 +6,9 @@ Use a regular webcam to track hand movements and control a WujiHand robotic hand
 
 ## Why This Project?
 
-Got a WujiHand and wanted to do something fun with it. Good opportunity to learn MediaPipe hand tracking and practice real-time system development.
+Started out wanting to build a cool-looking hand tracking dashboard with a cyberpunk aesthetic. Later got a WujiHand robotic hand and added the hardware control feature.
 
-Along the way, I made some optimizations (hardware filtering, non-blocking USB writes, etc.) and got the latency down to ~50ms.
+Good opportunity to learn MediaPipe hand tracking and practice real-time system development. Along the way, I made some optimizations (hardware filtering, non-blocking USB writes, etc.) and got the latency down to ~50ms.
 
 ## 🎯 What You Get
 
