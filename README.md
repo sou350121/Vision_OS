@@ -20,6 +20,29 @@ Track hand movements with a regular webcam, optionally control a WujiHand roboti
 
 - UI-only demo recording (download/open): `docs/assets/demo2.mp4`
 
+## Technical Architecture
+
+```text
+Browser (MediaPipe + Three.js)
+  - Hand tracking + finger extensions (0-100)
+  - UI / telemetry rendering
+        |
+        | WebSocket (default ws://localhost:8765)
+        v
+Python Bridge (wuji_bridge.py)
+  - Extension -> joint target mapping
+  - Safety: ARM, reset/unjam, watchdog
+        |
+        | USB (via wujihandpy)
+        v
+WujiHand hardware
+```
+
+- **Frontend**: `index.html` + `app.js` (+ `src/fingerExtension.js`)
+- **Backend bridge**: `wuji_bridge.py` (WebSocket server)
+- **Mapping/config**: `config/wuji_mapping.json` (optional override)
+- **Docs**: `docs/TECHNICAL_DETAILS.md`, `docs/WUJI_INTEGRATION.md`
+
 ## Why This Project?
 
 Started out wanting to build a cool-looking hand tracking dashboard with a cyberpunk aesthetic. Later got a WujiHand and added hardware control. Made some optimizations along the way, got latency down to ~50ms.

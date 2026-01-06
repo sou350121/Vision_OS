@@ -20,6 +20,29 @@
 
 - UI 界面演示录像（下载/打开）：`docs/assets/demo2.mp4`
 
+## 技术架构
+
+```text
+浏览器端 (MediaPipe + Three.js)
+  - 手部追踪 + 计算五指伸展度(0-100)
+  - UI / 遥测显示
+        |
+        | WebSocket（默认 ws://localhost:8765）
+        v
+Python Bridge（wuji_bridge.py）
+  - 伸展度 -> 关节目标角映射
+  - 安全：ARM、复位/解卡、watchdog
+        |
+        | USB（通过 wujihandpy）
+        v
+WujiHand 硬件
+```
+
+- **前端**：`index.html` + `app.js`（以及 `src/fingerExtension.js`）
+- **后端桥接**：`wuji_bridge.py`（WebSocket 服务）
+- **映射/配置**：`config/wuji_mapping.json`（可选覆盖）
+- **文档**：`docs/TECHNICAL_DETAILS.md`、`docs/WUJI_INTEGRATION.md`
+
 ## 为什么做这个项目？
 
 一开始是想做一个好看的手部追踪仪表板，赛博朋克风格那种。后来有了 WujiHand 机械手，就顺便加上了控制功能。做的过程中踩了不少坑，也做了一些优化，最终延迟大概在 ~50ms。
