@@ -10,27 +10,15 @@ Track hand movements with a regular webcam, optionally control a WujiHand roboti
 
 ## Demo (Real Hardware)
 
-- Click the thumbnail to watch:
+- Full recording (download/open): `docs/assets/demo1.mp4`
 
-[![VISION_OS hardware demo](docs/assets/cover.jpeg)](https://youtu.be/onrclXu-o68)
-
-- Direct file in repo (download/open): `docs/assets/demo1.mp4`
-
-<details>
-  <summary>10s GIF preview (high quality)</summary>
-  <br/>
-  <img src="docs/assets/demo1_10s.gif" alt="VISION_OS hardware demo (10s GIF)" width="100%" />
-</details>
+<img src="docs/assets/demo1_10s.gif" alt="VISION_OS hardware demo (10s GIF)" width="100%" />
 
 ## Demo (Web UI)
 
-- UI-only demo recording (download/open): `docs/assets/demo2.mp4`
+- Full recording (download/open): `docs/assets/demo2.mp4`
 
-<details>
-  <summary>10s GIF preview (high quality)</summary>
-  <br/>
-  <img src="docs/assets/demo2_10s.gif" alt="VISION_OS web UI demo (10s GIF)" width="100%" />
-</details>
+<img src="docs/assets/demo2_10s.gif" alt="VISION_OS web UI demo (10s GIF)" width="100%" />
 
 ## Technical Architecture
 
