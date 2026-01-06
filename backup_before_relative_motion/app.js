@@ -1014,17 +1014,14 @@ class VisionOS {
     }
 
     updateFingerExtension(landmarks, side, isPrimaryHand = false) {
-        // Calculate raw extension for each finger
-        const rawExtensions = {
+        // Calculate extension for each finger
+        const extensions = {
             thumb: this.getFingerExtension(landmarks, [1, 2, 3, 4]),
             index: this.getFingerExtension(landmarks, [5, 6, 7, 8]),
             middle: this.getFingerExtension(landmarks, [9, 10, 11, 12]),
             ring: this.getFingerExtension(landmarks, [13, 14, 15, 16]),
             pinky: this.getFingerExtension(landmarks, [17, 18, 19, 20])
         };
-        
-        // Apply simple relative motion enhancement (velocity coherence only)
-        const extensions = this.applySimpleRelativeMotion(rawExtensions);
         
         // Calculate thumb spread separately (for J1 control)
         const thumbSpread = this.getThumbSpread(landmarks);
@@ -1148,67 +1145,6 @@ class VisionOS {
         const ratio = spread / (handScale || 1);
         // Map Spread: 0.30 (Tucked) -> 0%, 0.65 (Open) -> 100%
         return Math.max(0, Math.min(100, (ratio - 0.30) * 285));
-    }
-
-    /**
-     * Simple relative motion enhancement - only velocity coherence detection.
-     * When all 4 fingers move together, it's likely hand shake, so dampen response.
-     */
-    applySimpleRelativeMotion(raw) {
-        if (!this._prevExtensions) {
-            this._prevExtensions = { ...raw };
-            return raw;
-        }
-        
-        const prev = this._prevExtensions;
-        
-        // Calculate velocities
-        const velocities = {
-            index: raw.index - prev.index,
-            middle: raw.middle - prev.middle,
-            ring: raw.ring - prev.ring,
-            pinky: raw.pinky - prev.pinky
-        };
-        
-        // Check velocity coherence
-        const avgVelocity = (velocities.index + velocities.middle + velocities.ring + velocities.pinky) / 4;
-        const velocityVariance = (
-            Math.pow(velocities.index - avgVelocity, 2) +
-            Math.pow(velocities.middle - avgVelocity, 2) +
-            Math.pow(velocities.ring - avgVelocity, 2) +
-            Math.pow(velocities.pinky - avgVelocity, 2)
-        ) / 4;
-        const velocityStd = Math.sqrt(velocityVariance);
-        
-        // High coherence = all fingers moving together = likely noise
-        const isCoherentMotion = velocityStd < 3.0 && Math.abs(avgVelocity) > 2;
-        const dampingFactor = isCoherentMotion ? 0.3 : 1.0;
-        
-        let enhanced = { thumb: raw.thumb };
-        
-        if (isCoherentMotion) {
-            // Dampen coherent motion
-            enhanced.index = prev.index + (raw.index - prev.index) * dampingFactor;
-            enhanced.middle = prev.middle + (raw.middle - prev.middle) * dampingFactor;
-            enhanced.ring = prev.ring + (raw.ring - prev.ring) * dampingFactor;
-            enhanced.pinky = prev.pinky + (raw.pinky - prev.pinky) * dampingFactor;
-        } else {
-            // Pass through
-            enhanced.index = raw.index;
-            enhanced.middle = raw.middle;
-            enhanced.ring = raw.ring;
-            enhanced.pinky = raw.pinky;
-        }
-        
-        // Clamp
-        enhanced.thumb = Math.max(0, Math.min(100, enhanced.thumb));
-        enhanced.index = Math.max(0, Math.min(100, enhanced.index));
-        enhanced.middle = Math.max(0, Math.min(100, enhanced.middle));
-        enhanced.ring = Math.max(0, Math.min(100, enhanced.ring));
-        enhanced.pinky = Math.max(0, Math.min(100, enhanced.pinky));
-        
-        this._prevExtensions = { ...enhanced };
-        return enhanced;
     }
 
     /**

@@ -1188,50 +1188,6 @@ def _parse_args() -> Config:
 
 if __name__ == "__main__":
     cfg = _parse_args()
-    
-    # Auto-scan for WujiHand if using default VID/PID
-    if cfg.usb_pid == -1:
-        try:
-            from scan_wuji import scan_devices, find_best_device, get_connection_params
-            print("[BRIDGE] Auto-scanning for WujiHand devices...", flush=True)
-            devices = scan_devices()
-            best = find_best_device(devices)
-            if best:
-                params = get_connection_params(best)
-                print(f"[BRIDGE] Found device: VID=0x{params['usb_vid']:04X} PID=0x{params['usb_pid']:04X}", flush=True)
-                # Update config with scanned values
-                cfg = Config(
-                    host=cfg.host,
-                    port=cfg.port,
-                    usb_vid=params['usb_vid'],
-                    usb_pid=params['usb_pid'],
-                    serial_number=params.get('serial_number') or cfg.serial_number,
-                    telemetry_hz=cfg.telemetry_hz,
-                    smoothing=cfg.smoothing,
-                    max_speed_rad_s=cfg.max_speed_rad_s,
-                    unjam_max_speed_rad_s=cfg.unjam_max_speed_rad_s,
-                    max_curl=cfg.max_curl,
-                    open_margin=cfg.open_margin,
-                    arm_reset_s=cfg.arm_reset_s,
-                    reset_open_s=cfg.reset_open_s,
-                    normal_current_limit_ma=cfg.normal_current_limit_ma,
-                    unjam_current_limit_ma=cfg.unjam_current_limit_ma,
-                    auto_unjam_on_error=cfg.auto_unjam_on_error,
-                    arm_reset_threshold_rad=cfg.arm_reset_threshold_rad,
-                    watchdog_s=cfg.watchdog_s,
-                    dry_run=cfg.dry_run,
-                    mapping_path=cfg.mapping_path,
-                    write_mode=cfg.write_mode,
-                    write_timeout_s=cfg.write_timeout_s,
-                )
-            else:
-                print("[BRIDGE] No WujiHand found during scan, will retry on connect", flush=True)
-        except ImportError:
-            print("[BRIDGE] scan_wuji.py not found, using default VID/PID", flush=True)
-        except Exception as e:
-            print(f"[BRIDGE] Auto-scan failed: {e}, using default VID/PID", flush=True)
-    
     bridge = WujiBridge(cfg)
     asyncio.run(bridge.start())
-
 

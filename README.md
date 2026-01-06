@@ -60,6 +60,8 @@ This project can stream tracked finger extension data to a **Wuji dexterous hand
 - 5-finger curl tracking + independent thumb spread control
 - Hardware LowPass filtering for smooth motion
 - Safety mechanisms: ARM switch, Reset sequence, max_curl limit
+- **Auto device scanning**: Automatically detects WujiHand USB devices
+- **Relative motion enhancement**: Velocity coherence detection to filter hand shake
 
 ### Quick Start
 
@@ -68,7 +70,7 @@ This project can stream tracked finger extension data to a **Wuji dexterous hand
    pip install -r requirements.txt
    ```
 
-2. Start the bridge:
+2. Start the bridge (auto-scans for device):
    ```bash
    python wuji_bridge.py --max-speed 2.0
    ```
@@ -79,6 +81,16 @@ This project can stream tracked finger extension data to a **Wuji dexterous hand
    ```
 
 4. Open `http://localhost:8080/`, wait for WUJI to show `CONNECTED`, then press **ARM** to enable motion.
+
+### Device Scanning
+
+The bridge automatically scans for WujiHand devices on startup. You can also scan manually:
+```bash
+python scan_wuji.py           # Scan and print device info
+python scan_wuji.py --json    # Output as JSON
+python scan_wuji.py --wait    # Wait until device is found
+python scan_wuji.py --all     # Show all found devices
+```
 
 ### Configuration
 
