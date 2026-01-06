@@ -2,121 +2,74 @@
 
 [English](README.md) | 简体中文
 
-用普通摄像头追踪手部动作，实时控制 WujiHand 机械手。
+用普通摄像头追踪手部动作，可选连接 WujiHand 机械手进行实时控制。
 
 ## 为什么做这个项目？
 
-一开始是想做一个好看的手部追踪仪表板，赛博朋克风格那种。后来买了 WujiHand 机械手，就顺便加上了机械手控制功能。
+一开始是想做一个好看的手部追踪仪表板，赛博朋克风格那种。后来有了 WujiHand 机械手，就顺便加上了控制功能。做的过程中踩了不少坑，也做了一些优化，最终延迟大概在 ~50ms。
 
-正好学一下 MediaPipe 手部追踪，顺便练练实时系统的开发。做的过程中踩了不少坑，也做了一些优化（硬件滤波、非阻塞写入等），最终延迟大概在 ~50ms 左右。
+## 功能
 
-## 这个项目能干什么？
+**手部追踪（不需要机械手）**
+- 双手追踪 + 手势识别（张开、剪刀、OK 等）
+- 3D 可视化，赛博朋克风格
 
-### 手部追踪仪表板（不需要机械手）
-即使没有 WujiHand，你也能用这个项目：
-- **双手追踪**，实时显示每根手指的伸展度
-- **手势识别**：张开、剪刀、三、OK、打电话、点赞
-- **3D 可视化**，赛博朋克风格的全息手部模型
-- **生物特征显示**：神经热图、方向罗盘、信号图
-
-### 机械手控制（需要硬件）
-- 实时手指追踪 → 机械手控制（~50ms 延迟）
-- 5 指弯曲 + 拇指独立展开（6 个自由度）
-- USB 设备自动扫描，即插即用
+**机械手控制（需要硬件）**
+- 5 指弯曲 + 拇指展开，~50ms 延迟
+- USB 自动扫描，即插即用
 - 安全机制：ARM 开关、Reset 序列、握力限制
 
-## 主要优化点
+## 硬件安全提示
 
-| 优化项 | 做法 | 效果 |
-|---|---|---|
-| **滤波** | 用硬件 LowPass 替代软件多层滤波 | 平滑且不增加延迟 |
-| **USB 写入** | 非阻塞模式 `_unchecked` | 减少等待时间 |
-| **设备连接** | 自动扫描 USB 设备 | 即插即用 |
-| **安全机制** | ARM 开关 + Reset 序列 + 握力限制 | 防止硬件损坏 |
-| **调试工具** | 15 个脚本 | 解卡/诊断/测试 |
-
-### 滤波优化的思路
-
-一开始用软件滤波（One Euro Filter + 速度限制），发现会增加延迟。后来改成硬件 LowPass（8Hz），滤波和电机执行同时进行，不占用控制链路时间。
-
-## 硬件需求
-
-- 普通 USB 摄像头（笔记本内置的也行）
-- WujiHand 机械手
-- Windows/Mac/Linux 电脑
+本项目可以驱动真实硬件，**请自行承担风险**。使用时请远离运动部件（手指/头发/线材/异物），先用更保守的速度/电流参数测试，并随时准备断电/拔掉 USB。作者不对任何人身伤害或硬件损坏负责。
 
 ## 快速开始
 
 ```bash
-# 1. 装依赖
+# 装依赖
 pip install -r requirements.txt
 npm install
 
-# 2. 启动 bridge（自动扫描设备）
+# 启动 Bridge（可选；会自动扫描设备）
 python wuji_bridge.py --max-speed 2.0
 
-# 3. 启动前端
-npx http-server -p 8080
+# 启动前端
+npm run dev:8080
 
-# 4. 打开浏览器 http://localhost:8080
-# 5. 等 WUJI 显示 CONNECTED，点 ARM 开始控制
+# 打开 http://localhost:8080，点 ARM 开始控制
 ```
 
-## 配置
+## 硬件（可选）
 
-复制 `wuji_mapping.example.json` → `wuji_mapping.json`：
-
-```json
-{
-    "max_curl": 0.85,        // 最大握力，别设太高会卡住
-    "open_pose": "lower",    // 张开对应 lower limit
-    "closed_pose": "upper",  // 握拳对应 upper limit
-    "finger_weights": {
-        "thumb": [1.4, 1.0, 1.0, 0.8],
-        "index": [1.0, 0.0, 1.0, 0.8],
-        // ...
-    }
-}
-```
+- 硬件控制依赖 **`wujihandpy`**（见 `requirements.txt`）。没有设备也可以正常运行仪表板/手部追踪。
+- Windows 下可能需要用 Zadig 把设备驱动切到 **WinUSB**。详见 `docs/WUJI_INTEGRATION.md`。
 
 ## 项目结构
 
 ```
-Vision_OS/
-├── app.js              # 前端，MediaPipe 手部追踪
-├── wuji_bridge.py      # 后端，WebSocket + 硬件控制
-├── scan_wuji.py        # USB 设备自动扫描
-├── wuji_mapping.json   # 配置文件
-│
-├── src/                # 前端模块
-├── tests/              # 测试
-├── tools/              # 调试工具（解卡、诊断、测试关节）
-├── docs/               # 文档
-└── backups/            # 历史版本备份
+├── app.js, index.html     # 前端
+├── wuji_bridge.py         # 后端 WebSocket + 硬件控制
+├── config/                # 配置文件 (wuji_mapping.json)
+├── src/                   # 前端模块
+├── tools/                 # 调试工具（解卡、诊断等）
+├── docs/                  # 文档
+└── tests/                 # 测试
 ```
 
 ## 调试工具
 
-机械手卡住了？用这些脚本：
-
 ```bash
-python tools/unjam_now.py      # 快速解卡
+python tools/unjam_now.py      # 解卡
 python tools/goto_zero.py      # 回零位
 python tools/wuji_diag.py      # 硬件诊断
-python tools/fix_middle.py     # 修复中指
 ```
-
-## 已知问题
-
-- MediaPipe 对手指侧向张开（spread）检测不准，所以四指的 J1 关节禁用了，只有拇指的 spread 能用
-- Windows 可能需要用 Zadig 换 USB 驱动（WinUSB）
 
 ## 文档
 
-- `docs/PROJECT_SUMMARY.md` - 完整项目总结，包括优化细节
-- `docs/TECHNICAL_DETAILS.md` - 技术实现
+- `docs/PROJECT_SUMMARY.md` - 项目总结
 - `docs/WUJI_INTEGRATION.md` - 集成指南
+- `THIRD_PARTY_NOTICES.md` - 第三方依赖与授权说明
 
 ## License
 
-MIT
+MIT - 见 `LICENSE`。

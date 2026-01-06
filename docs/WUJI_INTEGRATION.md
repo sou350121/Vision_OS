@@ -67,7 +67,7 @@ python wuji_bridge.py --usb-vid 0x0483 --usb-pid -1
 
 不同批次硬體的「開手/握拳」方向有機會相反，你可以用 JSON 設定調整映射：
 
-- 複製範例：`wuji_mapping.example.json` → `wuji_mapping.json`
+- 複製範例：`config/wuji_mapping.example.json` → `config/wuji_mapping.json`
 - 可調項目：
   - `open_pose`: `"auto"` / `"lower"` / `"upper"`
   - `closed_pose`: `"auto"` / `"lower"` / `"upper"`
@@ -79,7 +79,7 @@ python wuji_bridge.py --usb-vid 0x0483 --usb-pid -1
 啟動 bridge 時指定：
 
 ```bash
-python wuji_bridge.py --mapping wuji_mapping.json
+python wuji_bridge.py --mapping config/wuji_mapping.json
 ```
 
 ### A.2 速度（更安全）
@@ -193,7 +193,7 @@ Get-PnpDevice -PresentOnly | Where-Object { $_.InstanceId -match 'VID_' } | Sele
 你也可以先跑一次診斷腳本（同樣會嘗試初始化硬體）：
 
 ```bash
-python wuji_diag.py
+python tools/wuji_diag.py
 ```
 
 ### 3.2 若 VID/PID 不是 0x0483

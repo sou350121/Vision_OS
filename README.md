@@ -19,6 +19,10 @@ Started out wanting to build a cool-looking hand tracking dashboard with a cyber
 - Auto USB device scanning, plug and play
 - Safety: ARM switch, Reset sequence, grip limits
 
+## Safety Notice (Hardware)
+
+This project can drive real hardware. **Use at your own risk.** Keep fingers, hair, cables, and objects away from moving parts. Start with low speed/current limits and be ready to unplug power/USB. The authors are not responsible for any injury or hardware damage.
+
 ## Quick Start
 
 ```bash
@@ -26,19 +30,26 @@ Started out wanting to build a cool-looking hand tracking dashboard with a cyber
 pip install -r requirements.txt
 npm install
 
-# Start (auto-scans for device)
+# Start Bridge (optional; auto-scans for device)
 python wuji_bridge.py --max-speed 2.0
-npx http-server -p 8080
+
+# Start frontend
+npm run dev:8080
 
 # Open http://localhost:8080, click ARM to start
 ```
+
+## Hardware (Optional)
+
+- The hardware bridge depends on **`wujihandpy`** (see `requirements.txt`). If you don't have the device, you can still run the dashboard.
+- On Windows, you may need to switch the device driver to **WinUSB** (Zadig). See `docs/WUJI_INTEGRATION.md`.
 
 ## Project Structure
 
 ```
 ├── app.js, index.html     # Frontend
 ├── wuji_bridge.py         # Backend WebSocket + hardware control
-├── wuji_mapping.json      # Config
+├── config/                # Config files (wuji_mapping.json)
 ├── src/                   # Frontend modules
 ├── tools/                 # Debug tools (unjam, diagnostics, etc.)
 ├── docs/                  # Documentation
@@ -57,7 +68,8 @@ python tools/wuji_diag.py      # Hardware diagnostics
 
 - `docs/PROJECT_SUMMARY.md` - Full project summary (Chinese)
 - `docs/WUJI_INTEGRATION.md` - Integration guide
+- `THIRD_PARTY_NOTICES.md` - Third-party licenses and notices
 
 ## License
 
-MIT
+MIT - see `LICENSE`.

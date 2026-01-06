@@ -4,6 +4,9 @@ dist/
 *.log
 .gemini/
 
+# Local snapshots / archives (keep out of git history)
+backups/
+
 # Python
 __pycache__/
 *.pyc

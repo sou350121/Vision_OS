@@ -248,8 +248,8 @@ Vision_OS/
 ├── index.html                # UI 界面
 ├── style.css                 # 樣式
 ├── wuji_bridge.py            # 後端: WebSocket 服務器 + 硬件控制
-├── scan_wuji.py              # USB 設備自動掃描工具
-├── wuji_mapping.json         # 配置: 關節權重和方向
+├── config/
+│   └── wuji_mapping.json     # 配置: 關節權重和方向
 │
 ├── src/                      # 前端模塊
 │   ├── fingerExtension.js    # 手指伸展度計算 (可測試模塊)
@@ -259,6 +259,7 @@ Vision_OS/
 │   └── test_bridge.py        # Bridge 單元測試
 │
 ├── tools/                    # 硬件調試工具
+│   ├── scan_wuji.py          # USB 設備自動掃描工具
 │   ├── diagnose_and_open.py  # 診斷並張開手
 │   ├── goto_zero.py          # 移動到零位
 │   ├── unjam_*.py            # 解卡工具

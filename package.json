@@ -7,7 +7,7 @@
     "dev": "vite",
     "dev:8080": "vite --port 8080",
     "bridge": "python wuji_bridge.py --write-mode unchecked --write-timeout 2.0",
-    "wuji:diag": "python wuji_diag.py",
+    "wuji:diag": "python tools/wuji_diag.py",
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
@@ -19,7 +19,7 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "type": "commonjs",
   "bugs": {
     "url": "https://github.com/sou350121/Vision_OS/issues"

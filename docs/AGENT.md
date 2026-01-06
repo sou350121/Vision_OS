@@ -33,7 +33,7 @@ The application is a single-page terminal designed for real-time telemetry from 
 
 This repo includes an optional hardware bridge:
 - **Bridge server**: `wuji_bridge.py` (WebSocket, default `ws://localhost:8765`)
-- **Diagnostics**: `wuji_diag.py`
+- **Diagnostics**: `tools/wuji_diag.py`
 - **Runbook**: `WUJI_INTEGRATION.md`
 
 High-level flow:

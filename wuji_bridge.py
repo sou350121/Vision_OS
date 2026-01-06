@@ -251,12 +251,15 @@ class WujiBridge:
             self._last_target_monotonic = time.monotonic()
 
     def _load_mapping(self, mapping_path: Optional[str]) -> None:
-        # Default to `wuji_mapping.json` next to this script if present.
+        # Default to `config/wuji_mapping.json` if present.
         path: Optional[Path] = None
         if mapping_path:
             path = Path(mapping_path)
         else:
-            candidate = Path(__file__).with_name("wuji_mapping.json")
+            # Try config/ directory first, then same directory as script
+            candidate = Path(__file__).parent / "config" / "wuji_mapping.json"
+            if not candidate.exists():
+                candidate = Path(__file__).with_name("wuji_mapping.json")
             if candidate.exists():
                 path = candidate
 

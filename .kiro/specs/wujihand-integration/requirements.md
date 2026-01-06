@@ -121,7 +121,7 @@ This document specifies the requirements for integrating VisionOS (a MediaPipe-b
 
 #### Acceptance Criteria
 
-1. THE Bridge SHALL load configuration from `wuji_mapping.json` if present
+1. THE Bridge SHALL load configuration from `config/wuji_mapping.json` if present
 2. THE configuration SHALL support: `open_pose`, `closed_pose`, `max_curl`, `finger_weights`
 3. THE Bridge SHALL support command-line arguments for: `--usb-vid`, `--usb-pid`, `--serial`, `--max-speed`, `--max-curl`, `--dry-run`
 4. WHEN `--dry-run` is specified, THE Bridge SHALL simulate hardware without sending actual commands
