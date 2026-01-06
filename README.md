@@ -2,192 +2,62 @@
 
 [中文](README_CN.md) | English
 
-Use a regular webcam to track hand movements and control a WujiHand robotic hand in real-time.
+Track hand movements with a regular webcam, optionally control a WujiHand robotic hand in real-time.
 
 ## Why This Project?
 
-Started out wanting to build a cool-looking hand tracking dashboard with a cyberpunk aesthetic. Later got a WujiHand robotic hand and added the hardware control feature.
+Started out wanting to build a cool-looking hand tracking dashboard with a cyberpunk aesthetic. Later got a WujiHand and added hardware control. Made some optimizations along the way, got latency down to ~50ms.
 
-Good opportunity to learn MediaPipe hand tracking and practice real-time system development. Along the way, I made some optimizations (hardware filtering, non-blocking USB writes, etc.) and got the latency down to ~50ms.
+## Features
 
-## 🎯 What You Get
+**Hand Tracking (No Hardware Needed)**
+- Dual-hand tracking + gesture recognition (OPEN, PEACE, OK, etc.)
+- 3D visualization with cyberpunk style
 
-### Hand Tracking Dashboard (No Hardware Needed)
-Even without a WujiHand, you get a fully functional hand tracking visualization:
-- **Dual-hand tracking** with real-time finger extension bars
-- **Gesture recognition**: OPEN, PEACE, THREE, OK, CALL, THUMBS_UP
-- **3D visualization** with cyberpunk-style holographic hand models
-- **Biometric displays**: Neural heatmap, orientation compass, signal graphs
-
-### WujiHand Control (With Hardware)
-- Real-time finger tracking → robotic hand control (~50ms latency)
-- 5-finger curl + independent thumb spread (6 DOF)
+**Robotic Hand Control (With Hardware)**
+- 5-finger curl + thumb spread, ~50ms latency
 - Auto USB device scanning, plug and play
-- Safety mechanisms: ARM switch, Reset sequence, grip limits
+- Safety: ARM switch, Reset sequence, grip limits
 
-## 🚀 Key Features
+## Quick Start
 
-- **Dual-Hand Tracking**: Independent monitoring of Left (Green) and Right (Blue) hand data with real-time HUD (Position, Handedness).
-- **High-Precision Sensing**: Angle-based finger extension calculation for 0-100% accuracy.
-- **Robust Gesture Library**:
-  - `OPEN` (🖐️), `PEACE` (✌️), `THREE` (3️⃣), `OK` (👌), `CALL / 666` (🤙), `THUMBS_UP` (👍).
-  - Hysteresis-based stabilization to prevent visual flickering.
-- **3D spatial Reconstruction**:
-  - Holographic skeletal models with wireframe spheres and glowing cores.
-  - Immersive cyberpunk environment with radial scanner grids and background particles.
-  - Real-time coordinate mapping from 2D camera space to 3D world space.
-- **Biometric Monitoring**:
-  - `Neural Heatmap`: Visualizes spatial hand activity and data density.
-  - `Analysis Open`: Real-time signal graphing of hand openness levels.
-  - `Orientation Compass`: Dynamic heading tracking for hand rotation.
-
-## 🛠️ Technology Stack
-
-- **Core**: HTML5, Vanilla CSS, JavaScript (ES6+).
-- **Computer Vision**: [MediaPipe Hands](https://google.github.io/mediapipe/solutions/hands).
-- **3D Engine**: [Three.js](https://threejs.org/) (WebGL).
-- **Typography**: [JetBrains Mono](https://www.jetbrains.com/lp/mono/) via Google Fonts.
-
-## 🏁 Getting Started
-
-### Prerequisites
-
-- A modern web browser (Chrome/Edge recommended for MediaPipe performance).
-- An active webcam.
-
-### Installation
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/sou350121/Vision_OS.git
-   ```
-2. Navigate to the project directory:
-   ```bash
-   cd Vision_OS
-   ```
-3. Install dependencies:
-   ```bash
-   npm install
-   ```
-4. Run development server:
-   ```bash
-   npm run dev
-   ```
-
-## 🤖 WujiHand Integration
-
-This project can stream tracked finger extension data to a **Wuji dexterous hand** via the `wujihandpy` SDK using a local WebSocket bridge.
-
-### Features
-- Real-time finger tracking → robotic hand control (~50ms latency)
-- 5-finger curl tracking + independent thumb spread control
-- Hardware LowPass filtering for smooth motion
-- Safety mechanisms: ARM switch, Reset sequence, max_curl limit
-- **Auto device scanning**: Automatically detects WujiHand USB devices
-- **Relative motion enhancement**: Velocity coherence detection to filter hand shake
-
-### Quick Start
-
-1. Install Python dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-2. Start the bridge (auto-scans for device):
-   ```bash
-   python wuji_bridge.py --max-speed 2.0
-   ```
-
-3. Start Vision_OS:
-   ```bash
-   npx http-server -p 8080
-   ```
-
-4. Open `http://localhost:8080/`, wait for WUJI to show `CONNECTED`, then press **ARM** to enable motion.
-
-### Device Scanning
-
-The bridge automatically scans for WujiHand devices on startup. You can also scan manually:
 ```bash
-python scan_wuji.py           # Scan and print device info
-python scan_wuji.py --json    # Output as JSON
-python scan_wuji.py --wait    # Wait until device is found
-python scan_wuji.py --all     # Show all found devices
+# Install dependencies
+pip install -r requirements.txt
+npm install
+
+# Start (auto-scans for device)
+python wuji_bridge.py --max-speed 2.0
+npx http-server -p 8080
+
+# Open http://localhost:8080, click ARM to start
 ```
 
-### Configuration
-
-Copy `wuji_mapping.example.json` → `wuji_mapping.json` to customize:
-- `open_pose` / `closed_pose`: Direction mapping (lower/upper)
-- `max_curl`: Maximum grip strength (0-1, default 0.85)
-- `finger_weights`: Per-joint weight tuning
-
-### Documentation
-- **Integration Guide**: `docs/WUJI_INTEGRATION.md`
-- **Technical Details**: `docs/TECHNICAL_DETAILS.md`
-- **Project Summary**: `docs/PROJECT_SUMMARY.md`
-
-## 📁 Project Structure
+## Project Structure
 
 ```
-Vision_OS/
-├── app.js                    # Frontend: MediaPipe + WebSocket client
-├── index.html                # UI interface
-├── style.css                 # Styles
-├── wuji_bridge.py            # Backend: WebSocket server + hardware control
-├── scan_wuji.py              # USB device auto-scanner
-├── wuji_mapping.json         # Config: joint weights and direction
-├── wuji_mapping.example.json # Example config template
-│
-├── src/                      # Frontend modules
-│   ├── fingerExtension.js    # Finger extension calculation
-│   ├── fingerExtension.test.js
-│   ├── handSelection.js      # Hand selection logic
-│   ├── handSelection.test.js
-│   └── oneEuroFilter.js      # One Euro filter (backup)
-│
-├── tests/                    # Python tests
-│   └── test_bridge.py        # Bridge unit tests
-│
-├── tools/                    # Hardware debug tools
-│   ├── diagnose_and_open.py  # Diagnose and open hand
-│   ├── goto_zero.py          # Move to zero position
-│   ├── unjam_*.py            # Unjam utilities
-│   ├── fix_*.py              # Joint fix utilities
-│   └── wuji_diag.py          # Hardware diagnostics
-│
-├── docs/                     # Documentation
-│   ├── PROJECT_SUMMARY.md    # Full project summary (中文)
-│   ├── TECHNICAL_DETAILS.md  # Technical implementation details
-│   ├── WUJI_INTEGRATION.md   # WujiHand integration guide
-│   └── AGENT.md              # AI agent instructions
-│
-├── backups/                  # Version backups
-│   ├── backup_old_with_smoothing/
-│   ├── backup_new_hardware_lowpass/
-│   └── backup_before_relative_motion/
-│
-└── v2_dev/                   # V2 development (VLA integration)
-    └── README.md
+├── app.js, index.html     # Frontend
+├── wuji_bridge.py         # Backend WebSocket + hardware control
+├── wuji_mapping.json      # Config
+├── src/                   # Frontend modules
+├── tools/                 # Debug tools (unjam, diagnostics, etc.)
+├── docs/                  # Documentation
+└── tests/                 # Tests
 ```
 
-### Production Build
+## Debug Tools
 
-To generate an optimized production bundle:
 ```bash
-npm run build
-```
-The output will be in the `dist/` folder. To preview the build:
-```bash
-npm run preview
+python tools/unjam_now.py      # Unjam
+python tools/goto_zero.py      # Go to zero position
+python tools/wuji_diag.py      # Hardware diagnostics
 ```
 
-## 🎮 Usage
+## Documentation
 
-- **2D/3D Toggle**: Use the selector in the upper header to switch between the camera overlay and the immersive 3D view.
-- **Hand Positioning**: Hold your hands 0.5m - 1.5m from the webcam for optimal tracking.
-- **Gestures**: Perform standard gestures to trigger status changes on the dashboard.
+- `docs/PROJECT_SUMMARY.md` - Full project summary (Chinese)
+- `docs/WUJI_INTEGRATION.md` - Integration guide
 
-## 📜 License
+## License
 
 MIT

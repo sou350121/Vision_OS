@@ -1192,7 +1192,7 @@ if __name__ == "__main__":
     # Auto-scan for WujiHand if using default VID/PID
     if cfg.usb_pid == -1:
         try:
-            from scan_wuji import scan_devices, find_best_device, get_connection_params
+            from tools.scan_wuji import scan_devices, find_best_device, get_connection_params
             print("[BRIDGE] Auto-scanning for WujiHand devices...", flush=True)
             devices = scan_devices()
             best = find_best_device(devices)
