@@ -16,9 +16,21 @@
 
 - Repo 内原始文件（下载/打开）：`docs/assets/demo1.mp4`
 
+<details>
+  <summary>10 秒 GIF 预览（高质量）</summary>
+  <br/>
+  <img src="docs/assets/demo1_10s.gif" alt="VISION_OS 硬件联动 Demo（10 秒 GIF）" width="100%" />
+</details>
+
 ## Demo（网页界面/UI）
 
 - UI 界面演示录像（下载/打开）：`docs/assets/demo2.mp4`
+
+<details>
+  <summary>10 秒 GIF 预览（高质量）</summary>
+  <br/>
+  <img src="docs/assets/demo2_10s.gif" alt="VISION_OS 网页界面 Demo（10 秒 GIF）" width="100%" />
+</details>
 
 ## 技术架构
 

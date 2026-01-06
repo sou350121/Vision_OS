@@ -16,9 +16,21 @@ Track hand movements with a regular webcam, optionally control a WujiHand roboti
 
 - Direct file in repo (download/open): `docs/assets/demo1.mp4`
 
+<details>
+  <summary>10s GIF preview (high quality)</summary>
+  <br/>
+  <img src="docs/assets/demo1_10s.gif" alt="VISION_OS hardware demo (10s GIF)" width="100%" />
+</details>
+
 ## Demo (Web UI)
 
 - UI-only demo recording (download/open): `docs/assets/demo2.mp4`
+
+<details>
+  <summary>10s GIF preview (high quality)</summary>
+  <br/>
+  <img src="docs/assets/demo2_10s.gif" alt="VISION_OS web UI demo (10s GIF)" width="100%" />
+</details>
 
 ## Technical Architecture
 
