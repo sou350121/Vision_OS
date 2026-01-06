@@ -16,6 +16,10 @@ Track hand movements with a regular webcam, optionally control a WujiHand roboti
 
 - Direct file in repo (download/open): `docs/assets/demo1.mp4`
 
+## Demo (Web UI)
+
+- UI-only demo recording (download/open): `docs/assets/demo2.mp4`
+
 ## Why This Project?
 
 Started out wanting to build a cool-looking hand tracking dashboard with a cyberpunk aesthetic. Later got a WujiHand and added hardware control. Made some optimizations along the way, got latency down to ~50ms.
