@@ -2,6 +2,10 @@
 
 [中文](README_CN.md) | English
 
+<p align="center">
+  <img src="docs/assets/cover.jpeg" alt="VISION_OS cover" width="100%" />
+</p>
+
 Track hand movements with a regular webcam, optionally control a WujiHand robotic hand in real-time.
 
 ## Why This Project?

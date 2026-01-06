@@ -2,6 +2,10 @@
 
 [English](README.md) | 简体中文
 
+<p align="center">
+  <img src="docs/assets/cover.jpeg" alt="VISION_OS 封面图" width="100%" />
+</p>
+
 用普通摄像头追踪手部动作，可选连接 WujiHand 机械手进行实时控制。
 
 ## 为什么做这个项目？
