@@ -27,7 +27,10 @@ from typing import Any, Dict, Optional, Set
 
 import numpy as np
 import websockets
-import wujihandpy
+try:
+    import wujihandpy  # type: ignore
+except Exception:  # pragma: no cover - optional dependency for CI / no-hardware mode
+    wujihandpy = None  # type: ignore
 
 FINGER_INDEX: Dict[str, int] = {
     "thumb": 0,
@@ -75,7 +78,8 @@ class WujiBridge:
 
         self.clients: Set[Any] = set()
 
-        self.hand: Optional[wujihandpy.Hand] = None
+        # `wujihandpy` is optional when running in `--dry-run` or when only using the UI/dashboard.
+        self.hand: Optional[Any] = None
         self.rt_controller: Optional[Any] = None  # Realtime controller for smooth motion
         self.has_hardware: bool = False
         self.armed: bool = False
@@ -90,7 +94,7 @@ class WujiBridge:
 
         # Mapping / calibration settings (overridable via JSON)
         # NOTE: This Wuji hand (right palm) boots into a stable OPEN pose. Default OPEN to "upper" and CLOSED to "lower".
-        # You can override via `wuji_mapping.json` (`open_pose` / `closed_pose`) if your hardware is inverted.
+        # You can override via `config/wuji_mapping.json` (`open_pose` / `closed_pose`) if your hardware is inverted.
         # open_pose_mode / closed_pose_mode: "lower" | "upper" | "auto"
         self.open_pose_mode: str = "upper"
         self.closed_pose_mode: str = "lower"
@@ -301,6 +305,22 @@ class WujiBridge:
     def connect_hardware(self, force: bool = False) -> None:
         now = time.monotonic()
         if (not force) and (now < self._next_connect_try):
+            return
+
+        # In dry-run mode, never touch hardware. Keep the bridge running for UI-only usage.
+        if self.cfg.dry_run:
+            self.hand = None
+            self.has_hardware = False
+            self.last_hw_error = None
+            self._next_connect_try = now + 3600.0  # effectively disable reconnect attempts
+            return
+
+        if wujihandpy is None:
+            self.hand = None
+            self.has_hardware = False
+            self.last_hw_error = "wujihandpy is not installed. Install with: pip install -r requirements.txt"
+            self._next_connect_try = now + self._connect_backoff_s
+            self._connect_backoff_s = min(self._connect_backoff_s * 1.5, 30.0)
             return
 
         try:
