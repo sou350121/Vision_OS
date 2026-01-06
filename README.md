@@ -100,9 +100,53 @@ Copy `wuji_mapping.example.json` → `wuji_mapping.json` to customize:
 - `finger_weights`: Per-joint weight tuning
 
 ### Documentation
-- **Integration Guide**: `WUJI_INTEGRATION.md`
-- **Technical Details**: `TECHNICAL_DETAILS.md`
-- **Project Summary**: `PROJECT_SUMMARY.md`
+- **Integration Guide**: `docs/WUJI_INTEGRATION.md`
+- **Technical Details**: `docs/TECHNICAL_DETAILS.md`
+- **Project Summary**: `docs/PROJECT_SUMMARY.md`
+
+## 📁 Project Structure
+
+```
+Vision_OS/
+├── app.js                    # Frontend: MediaPipe + WebSocket client
+├── index.html                # UI interface
+├── style.css                 # Styles
+├── wuji_bridge.py            # Backend: WebSocket server + hardware control
+├── scan_wuji.py              # USB device auto-scanner
+├── wuji_mapping.json         # Config: joint weights and direction
+├── wuji_mapping.example.json # Example config template
+│
+├── src/                      # Frontend modules
+│   ├── fingerExtension.js    # Finger extension calculation
+│   ├── fingerExtension.test.js
+│   ├── handSelection.js      # Hand selection logic
+│   ├── handSelection.test.js
+│   └── oneEuroFilter.js      # One Euro filter (backup)
+│
+├── tests/                    # Python tests
+│   └── test_bridge.py        # Bridge unit tests
+│
+├── tools/                    # Hardware debug tools
+│   ├── diagnose_and_open.py  # Diagnose and open hand
+│   ├── goto_zero.py          # Move to zero position
+│   ├── unjam_*.py            # Unjam utilities
+│   ├── fix_*.py              # Joint fix utilities
+│   └── wuji_diag.py          # Hardware diagnostics
+│
+├── docs/                     # Documentation
+│   ├── PROJECT_SUMMARY.md    # Full project summary (中文)
+│   ├── TECHNICAL_DETAILS.md  # Technical implementation details
+│   ├── WUJI_INTEGRATION.md   # WujiHand integration guide
+│   └── AGENT.md              # AI agent instructions
+│
+├── backups/                  # Version backups
+│   ├── backup_old_with_smoothing/
+│   ├── backup_new_hardware_lowpass/
+│   └── backup_before_relative_motion/
+│
+└── v2_dev/                   # V2 development (VLA integration)
+    └── README.md
+```
 
 ### Production Build
 

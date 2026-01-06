@@ -244,17 +244,34 @@ target[finger, joint] = open_pose + curl * weight * (closed_pose - open_pose)
 
 ```
 Vision_OS/
-├── app.js                 # 前端: MediaPipe + WebSocket 客戶端
-├── index.html             # UI 界面
-├── style.css              # 樣式
-├── wuji_bridge.py         # 後端: WebSocket 服務器 + 硬件控制
-├── wuji_mapping.json      # 配置: 關節權重和方向
-├── src/
-│   ├── fingerExtension.js # 手指伸展度計算 (可測試模塊)
-│   └── oneEuroFilter.js   # One Euro 濾波器 (備用)
-├── tests/
-│   └── test_bridge.py     # Bridge 單元測試
-└── backup_*/              # 歷史版本備份
+├── app.js                    # 前端: MediaPipe + WebSocket 客戶端
+├── index.html                # UI 界面
+├── style.css                 # 樣式
+├── wuji_bridge.py            # 後端: WebSocket 服務器 + 硬件控制
+├── scan_wuji.py              # USB 設備自動掃描工具
+├── wuji_mapping.json         # 配置: 關節權重和方向
+│
+├── src/                      # 前端模塊
+│   ├── fingerExtension.js    # 手指伸展度計算 (可測試模塊)
+│   └── oneEuroFilter.js      # One Euro 濾波器 (備用)
+│
+├── tests/                    # Python 測試
+│   └── test_bridge.py        # Bridge 單元測試
+│
+├── tools/                    # 硬件調試工具
+│   ├── diagnose_and_open.py  # 診斷並張開手
+│   ├── goto_zero.py          # 移動到零位
+│   ├── unjam_*.py            # 解卡工具
+│   ├── fix_*.py              # 關節修復工具
+│   └── wuji_diag.py          # 硬件診斷
+│
+├── docs/                     # 文檔
+│   ├── PROJECT_SUMMARY.md    # 項目總結 (本文件)
+│   ├── TECHNICAL_DETAILS.md  # 技術細節
+│   └── WUJI_INTEGRATION.md   # WujiHand 集成指南
+│
+├── backups/                  # 歷史版本備份
+└── v2_dev/                   # V2 開發 (VLA 集成)
 ```
 
 ## 運行方式
